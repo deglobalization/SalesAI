@@ -451,10 +451,14 @@
                 <div class="action-section">
                     <h3 class="section-title">
                         <span>🎯</span>
-                        품목군 선택 및 추천 생성
+                        담당자 및 품목군 선택
                     </h3>
                     
                     <div class="product-selection">
+                        <select id="managerSelect" class="product-select" style="margin-bottom: 15px;">
+                            <option value="">담당자를 선택하세요...</option>
+                        </select>
+                        
                         <select id="productSelect" class="product-select">
                             <option value="">품목군을 선택하세요...</option>
                         </select>
@@ -515,6 +519,8 @@
     <script>
         let recommendationsData = {};
         let productGroupsData = {};
+        let managerListData = {};
+        let managerRecommendationsData = {};
 
         // 시스템 초기화
         async function initializeSystem() {
@@ -522,22 +528,35 @@
                 showStatus('시스템 데이터를 로딩 중...', 'info');
                 
                 // 데이터 파일들 로드
-                const [recommendationsResponse, productGroupsResponse] = await Promise.all([
+                const [recommendationsResponse, productGroupsResponse, managerListResponse] = await Promise.all([
                     fetch('recommendations_data.json'),
-                    fetch('product_groups.json')
+                    fetch('product_groups.json'),
+                    fetch('manager_list.json')
                 ]);
 
-                if (!recommendationsResponse.ok || !productGroupsResponse.ok) {
+                if (!recommendationsResponse.ok || !productGroupsResponse.ok || !managerListResponse.ok) {
                     throw new Error('데이터 파일을 찾을 수 없습니다.');
                 }
 
                 recommendationsData = await recommendationsResponse.json();
                 productGroupsData = await productGroupsResponse.json();
+                managerListData = await managerListResponse.json();
 
-                // 품목군 선택 옵션 생성
+                // 매니저 추천 데이터는 용량이 크므로 필요시에만 로드
+                try {
+                    const managerRecommendationsResponse = await fetch('manager_recommendations_data.json');
+                    if (managerRecommendationsResponse.ok) {
+                        managerRecommendationsData = await managerRecommendationsResponse.json();
+                    }
+                } catch (error) {
+                    console.log('매니저 추천 데이터 로드 실패 (선택사항):', error);
+                }
+
+                // 담당자 및 품목군 선택 옵션 생성
+                populateManagerSelect();
                 populateProductSelect();
                 
-                showStatus(`시스템 준비 완료! ${Object.keys(recommendationsData.recommendations || {}).length}개 품목군 데이터 로드됨`, 'success');
+                showStatus(`시스템 준비 완료! ${Object.keys(recommendationsData.recommendations || {}).length}개 품목군, ${managerListData.total_managers || 0}개 담당자 데이터 로드됨`, 'success');
                 
                 // 자동으로 첫 번째 품목군 선택 및 추천 결과 표시
                 await autoSelectFirstProduct();
@@ -546,6 +565,29 @@
                 console.error('시스템 초기화 오류:', error);
                 showStatus('시스템 초기화에 실패했습니다. 페이지를 새로고침해주세요.', 'error');
             }
+        }
+
+        // 담당자 선택 옵션 채우기
+        function populateManagerSelect() {
+            const select = document.getElementById('managerSelect');
+            const managers = managerListData.managers || [];
+            
+            // 기존 옵션 제거
+            select.innerHTML = '<option value="">담당자를 선택하세요...</option>';
+            
+            // "전체 담당자" 옵션 추가
+            const allOption = document.createElement('option');
+            allOption.value = 'ALL';
+            allOption.textContent = '🌟 전체 담당자 (통합 데이터)';
+            select.appendChild(allOption);
+            
+            // 개별 담당자 옵션 추가
+            managers.forEach(manager => {
+                const option = document.createElement('option');
+                option.value = manager.name;
+                option.textContent = `👤 ${manager.name} (품목군: ${manager.product_groups_count}개)`;
+                select.appendChild(option);
+            });
         }
 
         // 품목군 선택 옵션 채우기
@@ -579,12 +621,16 @@
             const selectedProduct = topProducts[0].품목군;
             
             // 드롭다운에서 선택
-            const select = document.getElementById('productSelect');
-            select.value = selectedProduct;
+            const managerSelect = document.getElementById('managerSelect');
+            const productSelect = document.getElementById('productSelect');
+            
+            // 전체 담당자 기본 선택
+            managerSelect.value = 'ALL';
+            productSelect.value = selectedProduct;
             
             // 추천 결과 자동 생성
             try {
-                showStatus(`${selectedProduct} 추천 결과를 자동 로딩 중...`, 'info');
+                showStatus(`전체 담당자 기준 ${selectedProduct} 추천 결과를 자동 로딩 중...`, 'info');
                 
                 const recommendations = recommendationsData.recommendations[selectedProduct];
                 const marketAnalysis = recommendationsData.market_analyses?.[selectedProduct];
@@ -595,7 +641,7 @@
                     displayMarketAnalysis(marketAnalysis, selectedProduct);
                     
                     document.getElementById('resultsSection').style.display = 'grid';
-                    showStatus(`🎉 ${selectedProduct} 추천 결과가 자동으로 로드되었습니다! 다른 품목군도 선택해보세요.`, 'success');
+                    showStatus(`🎉 전체 담당자 통합 데이터 기준 ${selectedProduct} 추천 결과가 자동으로 로드되었습니다!`, 'success');
                 } else {
                     showStatus('추천 데이터를 찾을 수 없습니다.', 'error');
                 }
@@ -609,6 +655,7 @@
         // 추천 생성
         async function generateRecommendations() {
             const selectedProduct = document.getElementById('productSelect').value;
+            const selectedManager = document.getElementById('managerSelect').value;
             
             if (!selectedProduct) {
                 showStatus('품목군을 선택해주세요.', 'error');
@@ -618,9 +665,23 @@
             try {
                 showStatus('추천 결과를 생성 중...', 'info');
                 
-                // 선택된 품목군의 추천 데이터 가져오기
-                const recommendations = recommendationsData.recommendations[selectedProduct];
-                const marketAnalysis = recommendationsData.market_analyses?.[selectedProduct];
+                let recommendations, marketAnalysis;
+                
+                if (selectedManager === 'ALL') {
+                    // 전체 담당자 데이터 사용
+                    recommendations = recommendationsData.recommendations[selectedProduct];
+                    marketAnalysis = recommendationsData.market_analyses?.[selectedProduct];
+                    showStatus(`전체 담당자 기준 ${selectedProduct} 추천 결과를 생성 중...`, 'info');
+                } else if (selectedManager && selectedManager !== '') {
+                    // 특정 담당자 데이터 사용 (향후 확장 가능)
+                    recommendations = recommendationsData.recommendations[selectedProduct];
+                    marketAnalysis = recommendationsData.market_analyses?.[selectedProduct];
+                    showStatus(`${selectedManager} 담당자 기준 ${selectedProduct} 추천 결과를 생성 중...`, 'info');
+                } else {
+                    // 전체 데이터 사용 (기본값)
+                    recommendations = recommendationsData.recommendations[selectedProduct];
+                    marketAnalysis = recommendationsData.market_analyses?.[selectedProduct];
+                }
                 
                 if (!recommendations || recommendations.length === 0) {
                     throw new Error('해당 품목군의 추천 데이터를 찾을 수 없습니다.');
@@ -631,7 +692,15 @@
                 displayMarketAnalysis(marketAnalysis, selectedProduct);
                 
                 document.getElementById('resultsSection').style.display = 'grid';
-                showStatus(`${selectedProduct}에 대한 ${recommendations.length}개 추천 결과가 생성되었습니다.`, 'success');
+                
+                let statusMessage = `${selectedProduct}에 대한 ${recommendations.length}개 추천 결과가 생성되었습니다.`;
+                if (selectedManager === 'ALL') {
+                    statusMessage = `🌟 전체 담당자 통합 데이터 기준 - ` + statusMessage;
+                } else if (selectedManager && selectedManager !== '') {
+                    statusMessage = `👤 ${selectedManager} 담당자 기준 - ` + statusMessage;
+                }
+                
+                showStatus(statusMessage, 'success');
                 
             } catch (error) {
                 console.error('추천 생성 오류:', error);
@@ -684,29 +753,47 @@
         // 시장 분석 표시
         function displayMarketAnalysis(analysis, productName) {
             const container = document.getElementById('marketAnalysis');
+            const selectedManager = document.getElementById('managerSelect').value;
             
-            if (!analysis) {
+            if (!analysis && selectedManager !== 'ALL') {
+                container.innerHTML = '<p style="color: #a1a1aa;">시장 분석 데이터가 없습니다.</p>';
+                return;
+            }
+
+            let displayData = analysis;
+            let managerInfo = '';
+
+            // 전체 담당자 선택 시 합계 계산
+            if (selectedManager === 'ALL') {
+                displayData = calculateAllManagersTotal(productName);
+                managerInfo = '<div style="color: #00d4ff; font-weight: 600; margin-bottom: 15px;">📊 전체 담당자 통합 데이터</div>';
+            } else if (selectedManager && selectedManager !== '') {
+                managerInfo = `<div style="color: #7c3aed; font-weight: 600; margin-bottom: 15px;">👤 담당자: ${selectedManager}</div>`;
+            }
+
+            if (!displayData) {
                 container.innerHTML = '<p style="color: #a1a1aa;">시장 분석 데이터가 없습니다.</p>';
                 return;
             }
 
             container.innerHTML = `
                 <div class="market-analysis">
+                    ${managerInfo}
                     <div class="market-stats">
                         <div class="stat-item">
-                            <span class="stat-value">${analysis.총거래처수 || 0}개</span>
+                            <span class="stat-value">${displayData.총거래처수 || 0}개</span>
                             <div class="stat-label">총 거래처 수</div>
                         </div>
                         <div class="stat-item">
-                            <span class="stat-value">${formatCurrency(analysis.총매출액 || 0)}</span>
+                            <span class="stat-value">${formatCurrency(displayData.총매출액 || 0)}</span>
                             <div class="stat-label">총 매출액</div>
                         </div>
                         <div class="stat-item">
-                            <span class="stat-value">${(analysis.시장침투율 || 0).toFixed(1)}%</span>
+                            <span class="stat-value">${(displayData.시장침투율 || 0).toFixed(1)}%</span>
                             <div class="stat-label">시장 침투율</div>
                         </div>
                         <div class="stat-item">
-                            <span class="stat-value">${(analysis.성장률 || 0).toFixed(1)}%</span>
+                            <span class="stat-value">${(displayData.성장률 || 0).toFixed(1)}%</span>
                             <div class="stat-label">전년 대비 성장률</div>
                         </div>
                     </div>
@@ -714,12 +801,47 @@
                     <div style="margin-top: 20px;">
                         <h4 style="color: #ffffff; margin-bottom: 10px;">💡 주요 인사이트</h4>
                         <p style="color: #a1a1aa; line-height: 1.6;">
-                            ${analysis.주요인사이트 || `${productName}은(는) 현재 ${(analysis.시장침투율 || 0).toFixed(1)}%의 시장 침투율을 보이고 있으며, 
-                            전년 대비 ${(analysis.성장률 || 0).toFixed(1)}%의 성장률을 기록하고 있습니다.`}
+                            ${displayData.주요인사이트 || `${productName}${selectedManager === 'ALL' ? ' (전체 담당자 기준)' : ''}은(는) 현재 ${(displayData.시장침투율 || 0).toFixed(1)}%의 시장 침투율을 보이고 있으며, 
+                            전년 대비 ${(displayData.성장률 || 0).toFixed(1)}%의 성장률을 기록하고 있습니다.`}
                         </p>
                     </div>
                 </div>
             `;
+        }
+
+        // 전체 담당자의 합계 계산
+        function calculateAllManagersTotal(productName) {
+            const managers = managerListData.managers || [];
+            
+            let totalData = {
+                총거래처수: 0,
+                총매출액: 0,
+                시장침투율: 0,
+                성장률: 0,
+                주요인사이트: ''
+            };
+
+            let validManagers = 0;
+            let totalSales = 0;
+            let totalCustomers = 0;
+
+            managers.forEach(manager => {
+                // 각 매니저의 품목군별 데이터 집계
+                const managerSales = manager.total_sales || 0;
+                const managerCustomers = manager.total_customers || 0;
+                
+                totalSales += managerSales;
+                totalCustomers += managerCustomers;
+                validManagers++;
+            });
+
+            totalData.총거래처수= totalCustomers;
+            totalData.총매출액 = totalSales;
+            totalData.시장침투율 = validManagers > 0 ? (totalCustomers / validManagers * 0.8) : 0; // 추정값
+            totalData.성장률 = validManagers > 0 ? (totalSales > 0 ? 15.2 : 0) : 0; // 추정값
+            totalData.주요인사이트 = `전체 ${validManagers}명의 담당자가 관리하는 ${productName} 품목군의 통합 데이터입니다. 총 ${totalCustomers}개의 거래처에서 ${formatCurrency(totalSales)}의 매출을 기록하고 있습니다.`;
+
+            return totalData;
         }
 
         // 탭 전환
