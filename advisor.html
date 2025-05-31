@@ -1630,7 +1630,7 @@
             currentRegionLayers = [];
 
             // 최근 월 데이터로 지역별 매출 계산 (세부 지역 포함)
-            const recentMonthData = salesData.filter(row => row['기준년월'] === processedData.recentMonth);
+            const analysisRecentMonthData = salesData.filter(row => row['기준년월'] === processedData.recentMonth); console.log('분석용 최근월 데이터:', { analysisDataCount: analysisRecentMonthData.length, analysisRecentMonthSales: sumBy(analysisRecentMonthData, '총매출'), processedDataRecentMonthSales: processedData.recentMonthSales }); const recentMonthData = analysisRecentMonthData;
             const regionalSales = {};
             const detailedRegionalSales = {};
 
@@ -2214,7 +2214,18 @@
             const recentMonthData = monthlyData[recentMonth] || [];
             const recentMonthSales = sumBy(recentMonthData, '총매출');
 
-            processedData = {
+            // 디버깅: 최근월 매출 계산 확인
+            console.log('최근월 데이터 디버깅:', {
+                recentMonth: recentMonth,
+                recentMonthDataCount: recentMonthData.length,
+                recentMonthSales: recentMonthSales,
+                recentMonthSalesInBillion: recentMonthSales / 100000000,
+                sampleData: recentMonthData.slice(0, 3).map(row => ({
+                    거래처: row['거래처명'],
+                    품목: row['품목군'],
+                    매출: row['총매출']
+                }))
+            });             processedData = {
                 totalRecords: salesData.length,
                 dateRange: {
                     start: salesData.reduce((min, row) => row['기준년월_dt'] < min ? row['기준년월_dt'] : min, salesData[0]['기준년월_dt']),
@@ -2269,7 +2280,7 @@
                 updateProgress(25);
 
                 // 품목별 분석 (최근 월 기준)
-                const recentMonthData = salesData.filter(row => row['기준년월'] === processedData.recentMonth);
+                const analysisRecentMonthData = salesData.filter(row => row['기준년월'] === processedData.recentMonth); console.log('분석용 최근월 데이터:', { analysisDataCount: analysisRecentMonthData.length, analysisRecentMonthSales: sumBy(analysisRecentMonthData, '총매출'), processedDataRecentMonthSales: processedData.recentMonthSales }); const recentMonthData = analysisRecentMonthData;
                 const productData = groupBy(recentMonthData, '품목군');
                 const productAnalysis = Object.entries(productData)
                     .map(([product, data]) => ({
@@ -2367,7 +2378,7 @@
                         <div class="stat-label">최근월 거래 품목군</div>
                     </div>
                     <div class="stat-item">
-                        <div class="stat-value">${Math.round(processedData.recentMonthSales / 100000000).toLocaleString()}</div>
+                        <div class="stat-value">${(processedData.recentMonthSales / 100000000).toFixed(1)}</div>
                         <div class="stat-label">최근월 매출 (억원)</div>
                     </div>
                     <div class="stat-item">
