@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>거래처 추천 테스트</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: #1f2937;
+            color: #e5e7eb;
+        }
+        .test-container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #374151;
+            border-radius: 10px;
+        }
+        button {
+            padding: 10px 20px;
+            margin: 10px;
+            background-color: #10b981;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #059669;
+        }
+        .log-container {
+            background-color: #111827;
+            padding: 15px;
+            border-radius: 5px;
+            margin-top: 20px;
+            height: 400px;
+            overflow-y: auto;
+            font-family: monospace;
+            font-size: 12px;
+        }
+        .status-message {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 5px;
+        }
+        .status-info { background-color: rgba(59, 130, 246, 0.2); }
+        .status-success { background-color: rgba(16, 185, 129, 0.2); }
+        .status-error { background-color: rgba(239, 68, 68, 0.2); }
+        .loading-overlay { display: none; }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <h1>🧪 거래처 추천 기능 테스트</h1>
+        
+        <div>
+            <h3>테스트 시나리오:</h3>
+            <button onclick="testFunction1()">1. 함수 존재 확인</button>
+            <button onclick="testFunction2()">2. 데이터 로드 테스트</button>
+            <button onclick="testFunction3()">3. 이내과의원 추천 테스트</button>
+            <button onclick="testFunction4()">4. 곤지암성모의원 추천 테스트</button>
+            <button onclick="clearLog()">로그 지우기</button>
+        </div>
+        
+        <div id="statusMessage" class="status-message" style="display: none;"></div>
+        <div class="loading-overlay" id="loadingOverlay"></div>
+        
+        <div class="log-container" id="logContainer">
+            <!-- 로그가 여기에 표시됩니다 -->
+        </div>
+    </div>
+
+    <!-- 필요한 JavaScript 파일들 로드 -->
+    <script src="manager_recommendation_integration.js"></script>
+    <script src="customer_recommendations_integration.js"></script>
+    
+    <script>
+        // 로그 출력 함수
+        function addLog(message) {
+            const logContainer = document.getElementById('logContainer');
+            const timestamp = new Date().toLocaleTimeString();
+            logContainer.innerHTML += `[${timestamp}] ${message}<br>`;
+            logContainer.scrollTop = logContainer.scrollHeight;
+        }
+        
+        // 기존 console.log를 가로채서 화면에도 표시
+        const originalLog = console.log;
+        const originalError = console.error;
+        
+        console.log = function(...args) {
+            originalLog.apply(console, args);
+            addLog('LOG: ' + args.join(' '));
+        };
+        
+        console.error = function(...args) {
+            originalError.apply(console, args);
+            addLog('<span style="color: #ef4444;">ERROR: ' + args.join(' ') + '</span>');
+        };
+        
+        // showStatus와 showLoading 함수 정의 (advisor.html에서 가져옴)
+        function showStatus(message, type = 'info') {
+            const statusDiv = document.getElementById('statusMessage');
+            statusDiv.textContent = message;
+            statusDiv.className = `status-message status-${type}`;
+            statusDiv.style.display = 'block';
+            addLog(`STATUS (${type}): ${message}`);
+        }
+        
+        function showLoading(show) {
+            const loadingDiv = document.getElementById('loadingOverlay');
+            loadingDiv.style.display = show ? 'block' : 'none';
+            addLog(`LOADING: ${show ? 'ON' : 'OFF'}`);
+        }
+        
+        function clearLog() {
+            document.getElementById('logContainer').innerHTML = '';
+        }
+        
+        // 테스트 함수들
+        function testFunction1() {
+            addLog('=== 테스트 1: 함수 존재 확인 ===');
+            addLog('showCustomerRecommendations 함수: ' + (typeof showCustomerRecommendations));
+            addLog('window.loadManagerRecommendationsData 함수: ' + (typeof window.loadManagerRecommendationsData));
+            addLog('window.currentManager 값: ' + window.currentManager);
+        }
+        
+        async function testFunction2() {
+            addLog('=== 테스트 2: 데이터 로드 테스트 ===');
+            try {
+                if (typeof window.loadManagerRecommendationsData !== 'function') {
+                    addLog('ERROR: loadManagerRecommendationsData 함수가 없습니다!');
+                    return;
+                }
+                
+                const data = await window.loadManagerRecommendationsData();
+                addLog('데이터 로드 성공!');
+                addLog('데이터 구조: ' + JSON.stringify(Object.keys(data || {})));
+                
+                if (data && data.manager_data) {
+                    const managers = Object.keys(data.manager_data);
+                    addLog('사용 가능한 담당자: ' + managers.join(', '));
+                    
+                    // 첫 번째 담당자의 데이터 확인
+                    if (managers.length > 0) {
+                        const firstManager = managers[0];
+                        const managerRecs = data.manager_data[firstManager].recommendations;
+                        const productGroups = Object.keys(managerRecs || {});
+                        addLog(`${firstManager} 담당자의 품목군 수: ${productGroups.length}`);
+                        addLog(`첫 5개 품목군: ${productGroups.slice(0, 5).join(', ')}`);
+                    }
+                }
+            } catch (error) {
+                addLog('ERROR: ' + error.message);
+            }
+        }
+        
+        async function testFunction3() {
+            addLog('=== 테스트 3: 이내과의원 추천 테스트 ===');
+            window.currentManager = '김서연'; // 테스트용 담당자 설정
+            try {
+                await showCustomerRecommendations('이내과의원', '1008170');
+            } catch (error) {
+                addLog('ERROR: ' + error.message);
+            }
+        }
+        
+        async function testFunction4() {
+            addLog('=== 테스트 4: 우리내과의원 추천 테스트 ===');
+            window.currentManager = '김서연'; // 테스트용 담당자 설정
+            try {
+                await showCustomerRecommendations('우리내과의원', '1010586');
+            } catch (error) {
+                addLog('ERROR: ' + error.message);
+            }
+        }
+        
+        // 페이지 로드 시 초기 정보 표시
+        window.addEventListener('load', function() {
+            addLog('=== 페이지 로드 완료 ===');
+            addLog('User Agent: ' + navigator.userAgent);
+            addLog('현재 URL: ' + window.location.href);
+            setTimeout(testFunction1, 1000); // 1초 후 자동으로 함수 존재 확인
+        });
+    </script>
+</body>
+</html> 
