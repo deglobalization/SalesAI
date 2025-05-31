@@ -1489,16 +1489,7 @@
         // 거래처명에서 지역 추정 함수 (세부 지역 우선)
         function estimateRegionFromName(accountName, managerArea = null) {
             // 1. 먼저 세부 지역(시/군/구) 확인
-            // 0. 담당자 지역 정보 기반 매핑 (우선순위 최상위)
-            if (managerArea) {
-                const areaMapping = {
-                    '경기/인천2지역': { region: '경기', detailedRegion: '구리', detailedInfo: detailedRegionData['구리'] }
-                };
-                
-                if (areaMapping[managerArea]) {
-                    return areaMapping[managerArea];
-                }
-            }             for (const [detailRegion, info] of Object.entries(detailedRegionData)) {
+            for (const [detailRegion, info] of Object.entries(detailedRegionData)) {
                 if (accountName.includes(detailRegion) || accountName.includes(info.name)) {
                     return {
                         region: info.parent,
@@ -1635,7 +1626,7 @@
             const detailedRegionalSales = {};
 
             recentMonthData.forEach(row => {
-                const estimatedResult = estimateRegionFromName(row['거래처명'], row['담당자지역'] || row['지역'] || null);
+                const estimatedResult = estimateRegionFromName(row['거래처명']);
                 
                 if (estimatedResult.region !== '기타') {
                     // 광역 지역별 매출
