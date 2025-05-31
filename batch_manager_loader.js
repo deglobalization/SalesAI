@@ -318,6 +318,25 @@ async function startBatchAnalysis() {
     updateBatchProgress(managers.length, managers.length, '완료');
     window.managerBatchData.isProcessing = false;
     
+    // 성공한 담당자들의 분석 결과를 로컬 스토리지에 저장
+    const analysisResults = {};
+    const successfulManagers = Object.entries(window.managerBatchData.results)
+        .filter(([_, result]) => result.success);
+    
+    successfulManagers.forEach(([managerName, result]) => {
+        analysisResults[managerName] = {
+            ...result,
+            timestamp: new Date().toISOString()
+        };
+    });
+    
+    // localStorage에 분석 결과 저장
+    if (successfulManagers.length > 0) {
+        localStorage.setItem('batchAnalysisResults', JSON.stringify(analysisResults));
+        localStorage.setItem('batchAnalysisTimestamp', new Date().toISOString());
+        console.log(`✅ ${successfulManagers.length}명 담당자의 분석 결과를 localStorage에 저장했습니다.`);
+    }
+    
     showStatus('모든 담당자 분석이 완료되었습니다!', 'success');
     
     // 결과 표시
@@ -379,82 +398,134 @@ async function performManagerAnalysis(managerName) {
 // 일괄 분석 결과 표시
 function showBatchResults() {
     const resultsContainer = document.getElementById('resultsContainer');
-    const batchResults = document.getElementById('batchResults');
+    const resultEntries = Object.entries(window.managerBatchData.results);
     
-    if (!resultsContainer || !batchResults) return;
+    // 성공/실패 분류
+    const successResults = resultEntries.filter(([_, result]) => result.success);
+    const failureResults = resultEntries.filter(([_, result]) => !result.success);
     
-    const results = window.managerBatchData.results;
-    const managers = window.managerBatchData.managers;
-    
-    let successCount = 0;
-    let failCount = 0;
-    
-    // 성공한 담당자들의 분석 결과를 로컬 스토리지에 저장
-    const analysisResults = {};
-    
-    const resultItems = managers.map(manager => {
-        const result = results[manager.name];
-        const isSuccess = result && result.success;
-        
-        if (isSuccess) {
-            successCount++;
-            // 성공한 담당자의 분석 결과 저장
-            analysisResults[manager.name] = {
-                ...result,
-                managerInfo: manager,
-                timestamp: new Date().toISOString()
-            };
-        } else {
-            failCount++;
-        }
-        
-        return `
-            <div style="display: flex; justify-content: space-between; align-items: center; padding: 12px; margin: 8px 0; background: rgba(55, 65, 81, 0.3); border-radius: 8px; border-left: 4px solid ${isSuccess ? '#10b981' : '#ef4444'};">
-                <div>
-                    <div style="color: #ffffff; font-weight: 500;">${manager.name}</div>
-                    <div style="color: #9ca3af; font-size: 0.85rem;">
-                        ${manager.record_count.toLocaleString()}개 레코드
-                    </div>
-                </div>
-                <div style="text-align: right;">
-                    <div style="color: ${isSuccess ? '#10b981' : '#ef4444'}; font-size: 0.9rem; font-weight: 500;">
-                        ${isSuccess ? '✅ 분석 완료' : '❌ 분석 실패'}
-                    </div>
-                    ${isSuccess ? `<button onclick="selectAnalyzedManager('${manager.name}')" style="background: #10b981; color: white; border: none; border-radius: 4px; padding: 4px 8px; font-size: 0.8rem; margin-top: 4px; cursor: pointer;">📊 상세보기</button>` : ''}
-                    ${!isSuccess && result ? `<div style="color: #9ca3af; font-size: 0.8rem;">${result.error}</div>` : ''}
-                </div>
-            </div>
-        `;
-    }).join('');
-    
-    // 분석 결과를 로컬 스토리지에 저장
-    if (successCount > 0) {
-        localStorage.setItem('batchAnalysisResults', JSON.stringify(analysisResults));
-        localStorage.setItem('batchAnalysisTimestamp', new Date().toISOString());
-    }
+    // 결과 통계
+    const totalManagers = resultEntries.length;
+    const successCount = successResults.length;
+    const failureCount = failureResults.length;
     
     resultsContainer.innerHTML = `
-        <div style="margin-bottom: 20px; padding: 15px; background: rgba(16, 185, 129, 0.1); border-radius: 10px;">
-            <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
-                <span style="color: #10b981;">✅ 성공:</span>
-                <span style="color: #ffffff; font-weight: 500;">${successCount}명</span>
+        <div style="margin-bottom: 20px; padding: 15px; background: linear-gradient(135deg, rgba(16, 185, 129, 0.1), rgba(5, 150, 105, 0.1)); border-radius: 10px; border-left: 4px solid #10b981;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                <h4 style="color: #10b981; margin: 0; display: flex; align-items: center; gap: 8px;">
+                    <span>📊</span> 분석 완료 요약
+                </h4>
+                <div style="display: flex; gap: 10px;">
+                    <button onclick="exportBatchResults()" 
+                            style="background: linear-gradient(135deg, #00d4ff, #7c3aed); color: white; border: none; border-radius: 8px; padding: 8px 15px; cursor: pointer; font-size: 0.9rem; font-weight: 500; transition: transform 0.2s;"
+                            onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'">
+                        📦 배포용 파일 생성
+                    </button>
+                    <button onclick="showAnalyzedManagersList()" 
+                            style="background: linear-gradient(135deg, #6366f1, #8b5cf6); color: white; border: none; border-radius: 8px; padding: 8px 15px; cursor: pointer; font-size: 0.9rem; font-weight: 500; transition: transform 0.2s;"
+                            onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'">
+                        📋 결과 상세보기
+                    </button>
+                </div>
             </div>
-            <div style="display: flex; justify-content: space-between; margin-bottom: 15px;">
-                <span style="color: #ef4444;">❌ 실패:</span>
-                <span style="color: #ffffff; font-weight: 500;">${failCount}명</span>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 15px;">
+                <div style="text-align: center; padding: 10px; background: rgba(16, 185, 129, 0.1); border-radius: 8px;">
+                    <div style="color: #10b981; font-size: 1.5rem; font-weight: bold;">${totalManagers}</div>
+                    <div style="color: #9ca3af; font-size: 0.85rem;">총 담당자</div>
+                </div>
+                <div style="text-align: center; padding: 10px; background: rgba(34, 197, 94, 0.1); border-radius: 8px;">
+                    <div style="color: #22c55e; font-size: 1.5rem; font-weight: bold;">${successCount}</div>
+                    <div style="color: #9ca3af; font-size: 0.85rem;">분석 성공</div>
+                </div>
+                ${failureCount > 0 ? `
+                <div style="text-align: center; padding: 10px; background: rgba(239, 68, 68, 0.1); border-radius: 8px;">
+                    <div style="color: #ef4444; font-size: 1.5rem; font-weight: bold;">${failureCount}</div>
+                    <div style="color: #9ca3af; font-size: 0.85rem;">분석 실패</div>
+                </div>
+                ` : ''}
             </div>
-            ${successCount > 0 ? `
-            <div style="text-align: center; margin-top: 15px;">
-                <button onclick="showAnalyzedManagersList()" style="background: linear-gradient(135deg, #10b981, #059669); color: white; border: none; border-radius: 8px; padding: 12px 20px; cursor: pointer; font-weight: 500; font-size: 0.9rem;">
-                    👥 분석된 담당자 목록 보기
-                </button>
-            </div>` : ''}
         </div>
-        ${resultItems}
+        
+        ${successCount > 0 ? `
+        <div style="margin-bottom: 20px;">
+            <h5 style="color: #22c55e; margin-bottom: 10px; display: flex; align-items: center; gap: 8px;">
+                <span>✅</span> 분석 성공 (${successCount}명)
+            </h5>
+            <div style="max-height: 300px; overflow-y: auto;">
+                ${successResults.map(([managerName, result]) => `
+                    <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 12px; margin: 4px 0; background: rgba(34, 197, 94, 0.1); border-radius: 6px; border-left: 3px solid #22c55e;">
+                        <div>
+                            <span style="color: #ffffff; font-weight: 500;">${managerName}</span>
+                            <span style="color: #9ca3af; font-size: 0.85rem; margin-left: 10px;">(${result.recordCount?.toLocaleString() || 0}개 레코드)</span>
+                        </div>
+                        <button onclick="selectAnalyzedManager('${managerName}')" 
+                                style="background: #22c55e; color: white; border: none; border-radius: 4px; padding: 6px 12px; cursor: pointer; font-size: 0.8rem; font-weight: 500;">
+                            📊 결과보기
+                        </button>
+                    </div>
+                `).join('')}
+            </div>
+        </div>
+        ` : ''}
+        
+        ${failureCount > 0 ? `
+        <div>
+            <h5 style="color: #ef4444; margin-bottom: 10px; display: flex; align-items: center; gap: 8px;">
+                <span>❌</span> 분석 실패 (${failureCount}명)
+            </h5>
+            <div style="max-height: 200px; overflow-y: auto;">
+                ${failureResults.map(([managerName, result]) => `
+                    <div style="padding: 8px 12px; margin: 4px 0; background: rgba(239, 68, 68, 0.1); border-radius: 6px; border-left: 3px solid #ef4444;">
+                        <div style="color: #ffffff; font-weight: 500; margin-bottom: 4px;">${managerName}</div>
+                        <div style="color: #ef4444; font-size: 0.8rem;">${result.error || '알 수 없는 오류'}</div>
+                    </div>
+                `).join('')}
+            </div>
+        </div>
+        ` : ''}
+        
+        ${successCount > 0 ? `
+        <div style="margin-top: 25px; padding: 15px; background: rgba(0, 212, 255, 0.1); border-radius: 10px; border-left: 4px solid #00d4ff;">
+            <h4 style="color: #00d4ff; margin-bottom: 10px; display: flex; align-items: center; gap: 8px;">
+                <span>🚀</span> 배포 준비 완료!
+            </h4>
+            <p style="color: #9ca3af; margin-bottom: 15px; font-size: 0.9rem;">
+                ${successCount}명의 담당자 분석 결과가 준비되었습니다. <strong>배포용 파일 생성</strong> 버튼을 클릭하여 
+                GitHub Pages나 다른 호스팅 서비스에 업로드할 준비를 완료하세요.
+            </p>
+            <div style="display: flex; gap: 15px; justify-content: center; flex-wrap: wrap;">
+                <button onclick="exportBatchResults()" 
+                        style="background: linear-gradient(135deg, #00d4ff, #7c3aed); color: white; border: none; border-radius: 10px; padding: 15px 25px; cursor: pointer; font-size: 1rem; font-weight: 600; transition: all 0.3s ease; box-shadow: 0 4px 15px rgba(0, 212, 255, 0.3);"
+                        onmouseover="this.style.transform='scale(1.05)'; this.style.boxShadow='0 6px 20px rgba(0, 212, 255, 0.4)'" onmouseout="this.style.transform='scale(1)'; this.style.boxShadow='0 4px 15px rgba(0, 212, 255, 0.3)'">
+                    📦 배포용 파일 생성
+                </button>
+                <button onclick="startNewBatchAnalysis()" 
+                        style="background: linear-gradient(135deg, #10b981, #059669); color: white; border: none; border-radius: 10px; padding: 15px 25px; cursor: pointer; font-size: 1rem; font-weight: 600; transition: all 0.3s ease;"
+                        onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'">
+                    🔄 새 일괄 분석
+                </button>
+            </div>
+        </div>
+        ` : ''}
     `;
     
-    batchResults.style.display = 'block';
-    batchResults.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    document.getElementById('batchResults').style.display = 'block';
+}
+
+// 새 일괄 분석 시작
+function startNewBatchAnalysis() {
+    // 기존 결과 초기화
+    window.managerBatchData.results = {};
+    window.managerBatchData.isProcessing = false;
+    window.managerBatchData.currentManagerIndex = 0;
+    
+    // UI 초기화
+    document.getElementById('batchResults').style.display = 'none';
+    document.getElementById('batchProgress').style.display = 'none';
+    document.getElementById('managerListContainer').style.display = 'block';
+    document.getElementById('startBatchBtn').disabled = false;
+    
+    showStatus('새로운 일괄 분석을 시작할 준비가 되었습니다.', 'info');
 }
 
 // 분석된 담당자 선택
@@ -717,6 +788,206 @@ function showManualUploadButton() {
     }
 }
 
+// 일괄 분석 결과 JSON 파일로 저장
+function exportBatchResults() {
+    const analysisResults = JSON.parse(localStorage.getItem('batchAnalysisResults') || '{}');
+    
+    if (Object.keys(analysisResults).length === 0) {
+        showStatus('저장할 분석 결과가 없습니다. 먼저 일괄 분석을 수행해주세요.', 'warning');
+        return;
+    }
+    
+    // 결과 데이터 준비
+    const exportData = {
+        exportDate: new Date().toISOString(),
+        totalManagers: Object.keys(analysisResults).length,
+        analysisResults: analysisResults,
+        metadata: {
+            version: '1.0',
+            system: 'SalesAI Batch Analysis',
+            description: '담당자별 일괄 분석 결과 데이터'
+        }
+    };
+    
+    // JSON 파일로 다운로드
+    const dataStr = JSON.stringify(exportData, null, 2);
+    const dataBlob = new Blob([dataStr], { type: 'application/json' });
+    
+    const link = document.createElement('a');
+    const timestamp = new Date().toISOString().slice(0, 19).replace(/[T:]/g, '_');
+    link.href = URL.createObjectURL(dataBlob);
+    link.download = `batch_analysis_results_${timestamp}.json`;
+    
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(link.href);
+    
+    showStatus(`분석 결과를 JSON 파일로 저장했습니다 (${Object.keys(analysisResults).length}명 담당자)`, 'success');
+    
+    // 배포용 파일 생성 안내
+    showExportGuide();
+}
+
+// 배포용 파일 생성 안내
+function showExportGuide() {
+    const guideCard = document.createElement('div');
+    guideCard.className = 'analysis-card';
+    guideCard.style.cssText = `
+        background: linear-gradient(135deg, rgba(0, 212, 255, 0.1), rgba(124, 58, 237, 0.1));
+        border: 2px solid rgba(0, 212, 255, 0.4);
+        margin: 20px;
+        padding: 25px;
+        border-radius: 15px;
+        backdrop-filter: blur(20px);
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        z-index: 10000;
+        max-width: 600px;
+        width: 90%;
+    `;
+    
+    guideCard.innerHTML = `
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+            <h3 style="margin: 0; color: #00d4ff; display: flex; align-items: center; gap: 10px;">
+                <span style="font-size: 1.5rem;">📦</span>
+                배포용 설정 가이드
+            </h3>
+            <button onclick="this.parentElement.parentElement.remove();" 
+                    style="background: rgba(239, 68, 68, 0.8); color: white; border: none; border-radius: 8px; padding: 8px 12px; cursor: pointer; font-size: 0.9rem;">
+                ✕ 닫기
+            </button>
+        </div>
+        
+        <div style="margin-bottom: 20px; padding: 15px; background: rgba(16, 185, 129, 0.1); border-radius: 10px; border-left: 4px solid #10b981;">
+            <h4 style="color: #10b981; margin-bottom: 10px;">🎯 배포 준비 완료!</h4>
+            <p style="color: #9ca3af; margin-bottom: 15px;">
+                다운로드된 JSON 파일을 프로젝트 루트에 <code style="background: rgba(0,0,0,0.3); padding: 2px 6px; border-radius: 4px; color: #00d4ff;">preload_analysis_results.json</code>으로 이름을 변경하여 저장하세요.
+            </p>
+            <div style="background: rgba(0, 0, 0, 0.2); padding: 15px; border-radius: 8px; font-family: monospace; font-size: 0.9rem;">
+                <div style="color: #10b981; margin-bottom: 10px;">📁 배포 디렉토리 구조:</div>
+                <div style="color: #9ca3af;">
+                    project-root/<br>
+                    ├── index.html<br>
+                    ├── advisor.html<br>
+                    ├── <span style="color: #00d4ff; font-weight: bold;">preload_analysis_results.json</span> ← 여기에 저장<br>
+                    ├── manager_list.json<br>
+                    └── ...
+                </div>
+            </div>
+        </div>
+        
+        <div style="margin-bottom: 20px; padding: 15px; background: rgba(75, 85, 99, 0.1); border-radius: 10px;">
+            <h4 style="color: #00d4ff; margin-bottom: 10px;">⚡ 자동 로드 기능</h4>
+            <p style="color: #9ca3af; margin-bottom: 10px;">
+                배포 후 방문자가 페이지에 접속하면:
+            </p>
+            <ul style="color: #9ca3af; margin-left: 20px; list-style-type: disc;">
+                <li>분석 없이 즉시 모든 담당자의 결과를 표시</li>
+                <li>핵심 지표 자동 계산 및 표시</li>
+                <li>담당자 전환 시 즉시 데이터 로드</li>
+                <li>빠른 사용자 경험 제공</li>
+            </ul>
+        </div>
+        
+        <div style="display: flex; gap: 10px; justify-content: center;">
+            <button onclick="createDeploymentFile()" 
+                    style="background: linear-gradient(135deg, #10b981, #059669); color: white; border: none; border-radius: 8px; padding: 12px 20px; cursor: pointer; font-weight: 500;">
+                📦 배포용 파일 자동 생성
+            </button>
+            <button onclick="this.parentElement.parentElement.parentElement.remove();" 
+                    style="background: linear-gradient(135deg, #6b7280, #4b5563); color: white; border: none; border-radius: 8px; padding: 12px 20px; cursor: pointer; font-weight: 500;">
+                나중에 수동으로 설정
+            </button>
+        </div>
+    `;
+    
+    document.body.appendChild(guideCard);
+}
+
+// 배포용 파일 자동 생성
+function createDeploymentFile() {
+    const analysisResults = JSON.parse(localStorage.getItem('batchAnalysisResults') || '{}');
+    
+    const deploymentData = {
+        deploymentDate: new Date().toISOString(),
+        autoLoad: true,
+        totalManagers: Object.keys(analysisResults).length,
+        analysisResults: analysisResults
+    };
+    
+    const dataStr = JSON.stringify(deploymentData, null, 2);
+    const dataBlob = new Blob([dataStr], { type: 'application/json' });
+    
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(dataBlob);
+    link.download = 'preload_analysis_results.json';
+    
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(link.href);
+    
+    showStatus('배포용 preload_analysis_results.json 파일이 생성되었습니다!', 'success');
+    
+    // 가이드 닫기
+    const guide = document.querySelector('.analysis-card');
+    if (guide && guide.innerHTML.includes('배포용 설정 가이드')) {
+        guide.remove();
+    }
+}
+
+// 배포 시 사전 로드된 분석 결과 자동 로드
+async function loadPreloadedAnalysisResults() {
+    try {
+        const response = await fetch('preload_analysis_results.json');
+        if (!response.ok) {
+            console.log('📋 사전 로드된 분석 결과 파일이 없습니다. 정상 모드로 시작합니다.');
+            return false;
+        }
+        
+        const preloadData = await response.json();
+        console.log('🚀 사전 로드된 분석 결과를 발견했습니다:', preloadData);
+        
+        if (preloadData.autoLoad && preloadData.analysisResults) {
+            // localStorage에 분석 결과 저장
+            localStorage.setItem('batchAnalysisResults', JSON.stringify(preloadData.analysisResults));
+            
+            // 로드 완료 상태 표시
+            showStatus(`🎉 사전 분석된 ${preloadData.totalManagers}명 담당자 데이터를 자동으로 로드했습니다!`, 'success');
+            
+            console.log(`✅ 배포 모드: ${preloadData.totalManagers}명 담당자의 분석 결과 자동 로드 완료`);
+            
+            // 첫 번째 담당자로 자동 설정 (옵션)
+            const managerNames = Object.keys(preloadData.analysisResults);
+            if (managerNames.length > 0 && !window.currentManager) {
+                const firstManager = managerNames[0];
+                console.log(`🎯 첫 번째 담당자 ${firstManager}로 자동 설정`);
+                
+                // 약간의 지연 후 자동 로드
+                setTimeout(() => {
+                    selectAnalyzedManager(firstManager);
+                }, 1000);
+            }
+            
+            return true;
+        }
+        
+    } catch (error) {
+        console.log('📋 사전 로드 시도 중 오류 (정상):', error.message);
+        return false;
+    }
+}
+
+// 배포 상태 확인
+function isDeploymentMode() {
+    return window.location.protocol === 'https:' || 
+           window.location.hostname !== 'localhost' && 
+           window.location.hostname !== '127.0.0.1';
+}
+
 // 전역 함수로 노출
 window.showBatchAnalysisUI = showBatchAnalysisUI;
 window.startBatchAnalysis = startBatchAnalysis;
@@ -725,5 +996,10 @@ window.loadManagerData = loadManagerData;
 window.selectAnalyzedManager = selectAnalyzedManager;
 window.showAnalyzedManagersList = showAnalyzedManagersList;
 window.clearAnalysisResults = clearAnalysisResults;
+window.exportBatchResults = exportBatchResults;
+window.showExportGuide = showExportGuide;
+window.createDeploymentFile = createDeploymentFile;
+window.loadPreloadedAnalysisResults = loadPreloadedAnalysisResults;
+window.isDeploymentMode = isDeploymentMode;
 
 console.log('담당자별 일괄 데이터 로더가 로드되었습니다.'); 

@@ -1,0 +1,268 @@
+/* 모바일 최적화 CSS - 텍스트 깨짐 방지 및 터치 최적화 */
+@media (max-width: 768px) {
+    /* 전체적인 텍스트 처리 */
+    * {
+        word-break: keep-all !important;
+        overflow-wrap: break-word !important;
+    }
+    
+    /* 터치 친화적 UI 요소 */
+    button, select, input, .btn {
+        min-height: 44px !important;
+        font-size: 16px !important; /* iOS 줌 방지 */
+        padding: 10px 12px !important;
+        border-radius: 8px !important;
+    }
+    
+    /* 헤더 버튼들 크기 조정 */
+    .header button {
+        font-size: 0.8rem !important;
+        padding: 8px 10px !important;
+        margin: 3px !important;
+        min-height: 36px !important;
+    }
+    
+    /* 헤더 제목 개선 */
+    .header h1 {
+        font-size: 1.7rem !important;
+        line-height: 1.3 !important;
+    }
+    
+    .header p {
+        font-size: 0.85rem !important;
+        line-height: 1.4 !important;
+    }
+    
+    /* 탭 버튼 개선 */
+    .tab-button {
+        white-space: nowrap !important;
+        flex-shrink: 0 !important;
+        font-size: 0.75rem !important;
+        padding: 8px 10px !important;
+    }
+    
+    /* 모바일에서 긴 탭 이름 숨기기 */
+    .tab-button span:last-child {
+        display: none !important;
+    }
+    
+    /* AI 설정 패널 모바일 최적화 */
+    #aiSettingsPanel {
+        padding: 12px !important;
+        margin: 10px 5px !important;
+        border-radius: 8px !important;
+    }
+    
+    #aiSettingsPanel h4 {
+        font-size: 0.9rem !important;
+    }
+    
+    #aiSettingsPanel input {
+        padding: 8px !important;
+        font-size: 0.85rem !important;
+        border-radius: 6px !important;
+    }
+    
+    #aiSettingsPanel button {
+        padding: 6px 10px !important;
+        font-size: 0.75rem !important;
+        min-height: 36px !important;
+    }
+    
+    /* 담당자 정보 패널 */
+    #currentManagerInfo {
+        margin: 10px 5px !important;
+        padding: 12px !important;
+        border-radius: 8px !important;
+    }
+    
+    #managerInfoText {
+        font-size: 0.8rem !important;
+        line-height: 1.3 !important;
+    }
+    
+    /* 컨테이너 및 패딩 최적화 */
+    .container {
+        padding: 8px !important;
+    }
+    
+    .control-panel, .analysis-card {
+        margin-bottom: 12px !important;
+        padding: 12px !important;
+        border-radius: 10px !important;
+    }
+    
+    /* 통계 카드 */
+    .stat-card {
+        min-height: 55px !important;
+        padding: 8px !important;
+        border-radius: 6px !important;
+    }
+    
+    .stat-value {
+        font-size: 0.95rem !important;
+        line-height: 1.2 !important;
+    }
+    
+    .stat-label {
+        font-size: 0.7rem !important;
+        margin-top: 3px !important;
+    }
+    
+    /* 고객 아이템 */
+    .customer-item {
+        font-size: 0.75rem !important;
+        padding: 6px !important;
+        margin-bottom: 5px !important;
+        border-radius: 5px !important;
+    }
+    
+    /* 추천 카드 */
+    .recommendation-card {
+        padding: 10px !important;
+        margin-bottom: 8px !important;
+        border-radius: 8px !important;
+    }
+    
+    .recommendation-title {
+        font-size: 0.9rem !important;
+        line-height: 1.3 !important;
+    }
+    
+    /* 테이블 최적화 */
+    table {
+        font-size: 0.75rem !important;
+        border-radius: 6px !important;
+    }
+    
+    th, td {
+        padding: 5px 3px !important;
+        line-height: 1.2 !important;
+    }
+    
+    /* 차트 컨테이너 */
+    .chart-container {
+        height: 180px !important;
+        margin: 8px 0 !important;
+    }
+    
+    /* 스크롤바 개선 */
+    ::-webkit-scrollbar {
+        width: 3px !important;
+        height: 3px !important;
+    }
+    
+    ::-webkit-scrollbar-track {
+        background: rgba(31, 41, 55, 0.3) !important;
+    }
+    
+    ::-webkit-scrollbar-thumb {
+        background: rgba(75, 85, 99, 0.6) !important;
+        border-radius: 2px !important;
+    }
+    
+    /* 상태 메시지 */
+    .status-message {
+        margin: 8px 5px !important;
+        padding: 10px !important;
+        font-size: 0.8rem !important;
+        line-height: 1.3 !important;
+        border-radius: 6px !important;
+    }
+    
+    /* 프로그레스 바 */
+    .progress-bar {
+        margin: 8px 5px !important;
+        height: 5px !important;
+        border-radius: 3px !important;
+    }
+    
+    /* 추천 아이템 */
+    .recommendation-item {
+        padding: 10px !important;
+        margin-bottom: 8px !important;
+        border-radius: 8px !important;
+    }
+    
+    .customer-name {
+        font-size: 0.9rem !important;
+        line-height: 1.3 !important;
+    }
+    
+    .customer-info {
+        font-size: 0.75rem !important;
+        line-height: 1.3 !important;
+    }
+    
+    .score-item {
+        font-size: 0.7rem !important;
+        line-height: 1.2 !important;
+    }
+    
+    /* 시장 분석 */
+    .market-analysis {
+        padding: 10px !important;
+        border-radius: 8px !important;
+    }
+    
+    .market-stats {
+        gap: 8px !important;
+    }
+    
+    .stat-item {
+        padding: 8px !important;
+        min-height: 50px !important;
+        border-radius: 6px !important;
+    }
+    
+    /* 섹션 제목 */
+    .section-title {
+        font-size: 1rem !important;
+        line-height: 1.3 !important;
+    }
+    
+    /* 제품 선택 */
+    .product-select {
+        padding: 10px !important;
+        font-size: 0.85rem !important;
+        border-radius: 8px !important;
+    }
+    
+    .generate-btn {
+        padding: 10px 15px !important;
+        font-size: 0.85rem !important;
+        border-radius: 8px !important;
+    }
+}
+
+/* 매우 작은 화면 (320px 이하) 추가 최적화 */
+@media (max-width: 320px) {
+    .header h1 {
+        font-size: 1.5rem !important;
+    }
+    
+    .tab-button {
+        min-width: 80px !important;
+        padding: 6px 8px !important;
+        font-size: 0.7rem !important;
+    }
+    
+    .stat-card {
+        min-height: 45px !important;
+        padding: 6px !important;
+    }
+    
+    .stat-value {
+        font-size: 0.85rem !important;
+    }
+    
+    .stat-label {
+        font-size: 0.65rem !important;
+    }
+    
+    button, select, input, .btn {
+        min-height: 40px !important;
+        font-size: 14px !important;
+        padding: 8px 10px !important;
+    }
+} 
