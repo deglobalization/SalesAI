@@ -421,7 +421,7 @@
         <div class="header">
             <div class="header-content">
                 <h1>📊 데이터 기반 영업 분석 및 추천 시스템</h1>
-                <p>AI 기반 스마트 영업 전략 수립 및 고객 타겟팅</p>
+                <p>AI 기반 스마트 영업 전략 수립 및 고객 타겟팅 - 자동으로 추천 결과가 로드됩니다</p>
             </div>
         </div>
 
@@ -539,6 +539,9 @@
                 
                 showStatus(`시스템 준비 완료! ${Object.keys(recommendationsData.recommendations || {}).length}개 품목군 데이터 로드됨`, 'success');
                 
+                // 자동으로 첫 번째 품목군 선택 및 추천 결과 표시
+                await autoSelectFirstProduct();
+                
             } catch (error) {
                 console.error('시스템 초기화 오류:', error);
                 showStatus('시스템 초기화에 실패했습니다. 페이지를 새로고침해주세요.', 'error');
@@ -560,6 +563,47 @@
                 option.textContent = `${product.품목군} (${product.질환분류})`;
                 select.appendChild(option);
             });
+        }
+
+        // 자동으로 첫 번째 품목군 선택 및 추천 표시
+        async function autoSelectFirstProduct() {
+            const productGroups = productGroupsData.product_groups || [];
+            if (productGroups.length === 0) return;
+
+            // 매출이 높은 품목군 우선 선택 (상위 3개 중 하나)
+            const topProducts = productGroups
+                .sort((a, b) => (b.총매출 || 0) - (a.총매출 || 0))
+                .slice(0, 3);
+            
+            // 첫 번째 높은 매출 품목군 선택
+            const selectedProduct = topProducts[0].품목군;
+            
+            // 드롭다운에서 선택
+            const select = document.getElementById('productSelect');
+            select.value = selectedProduct;
+            
+            // 추천 결과 자동 생성
+            try {
+                showStatus(`${selectedProduct} 추천 결과를 자동 로딩 중...`, 'info');
+                
+                const recommendations = recommendationsData.recommendations[selectedProduct];
+                const marketAnalysis = recommendationsData.market_analyses?.[selectedProduct];
+                
+                if (recommendations && recommendations.length > 0) {
+                    // 결과 표시
+                    displayRecommendations(recommendations, selectedProduct);
+                    displayMarketAnalysis(marketAnalysis, selectedProduct);
+                    
+                    document.getElementById('resultsSection').style.display = 'grid';
+                    showStatus(`🎉 ${selectedProduct} 추천 결과가 자동으로 로드되었습니다! 다른 품목군도 선택해보세요.`, 'success');
+                } else {
+                    showStatus('추천 데이터를 찾을 수 없습니다.', 'error');
+                }
+                
+            } catch (error) {
+                console.error('자동 추천 생성 오류:', error);
+                showStatus('자동 추천 생성 중 오류가 발생했습니다.', 'error');
+            }
         }
 
         // 추천 생성
@@ -699,6 +743,13 @@
             statusElement.textContent = message;
             statusElement.className = `status-message status-${type}`;
             statusElement.style.display = 'block';
+            
+            // 성공 메시지는 5초 후 자동으로 숨김
+            if (type === 'success') {
+                setTimeout(() => {
+                    statusElement.style.display = 'none';
+                }, 5000);
+            }
         }
 
         // 통화 포맷팅
