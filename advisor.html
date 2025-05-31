@@ -2225,7 +2225,7 @@
                 totalSales: sumBy(salesData, '총매출'), // 전체 기간 총매출 (참고용)
                 recentMonth: recentMonth,
                 recentMonthSales: recentMonthSales, // 최근 월 매출
-                recentMonthAccounts: uniqBy(recentMonthData, '거래처코드').length, // 최근 월 활성 거래처
+                recentMonthAccounts: uniqBy(recentMonthData.filter(row => row['총매출'] > 0), '거래처코드').length, // 최근 월 활성 거래처 (매출 > 0)
                 recentMonthProducts: uniqBy(recentMonthData, '품목군').length // 최근 월 거래 품목
             };
 
@@ -2402,7 +2402,7 @@
             const topProductsCard = document.createElement('div');
             topProductsCard.className = 'analysis-card';
             topProductsCard.innerHTML = `
-                <h3>🏆 상위 품목 성과 (${window.currentManager || "전체"} 담당자 - ${recentMonthFormatted})</h3>
+                <h3>🏆 상위 품목 성과 (전체 담당자 - ${recentMonthFormatted})</h3>
                 <p style="margin-bottom: 15px; color: #9ca3af; font-size: 0.9rem;">
                     품목명을 클릭하면 해당 품목을 구매하는 거래처 목록을 볼 수 있습니다.
                 </p>
