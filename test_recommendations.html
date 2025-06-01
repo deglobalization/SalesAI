@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SmartAI 추천 테스트</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #1f2937;
+            color: #e5e7eb;
+        }
+        .test-container {
+            background: #374151;
+            padding: 30px;
+            border-radius: 15px;
+            border: 2px solid #10b981;
+        }
+        .test-button {
+            background: #10b981;
+            color: white;
+            padding: 15px 30px;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 10px;
+        }
+        .test-button:hover {
+            background: #059669;
+        }
+        .result {
+            margin-top: 20px;
+            padding: 15px;
+            background: #1f2937;
+            border-radius: 10px;
+            border-left: 4px solid #10b981;
+        }
+        .error {
+            border-left-color: #ef4444;
+        }
+        .loading {
+            border-left-color: #f59e0b;
+        }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <h1>🧪 SmartAI 추천 기능 테스트</h1>
+        <p>담당자별 고품질 추천 데이터가 제대로 로드되는지 테스트합니다.</p>
+        
+        <button class="test-button" onclick="testDataLoad()">1. 데이터 로드 테스트</button>
+        <button class="test-button" onclick="testRecommendation()">2. 김서연 담당자 오잘탄 추천 테스트</button>
+        <button class="test-button" onclick="testFullIntegration()">3. 전체 통합 테스트</button>
+        
+        <div id="result" class="result" style="display: none;">
+            <h3>테스트 결과</h3>
+            <pre id="resultContent"></pre>
+        </div>
+    </div>
+
+    <script src="manager_recommendation_integration.js"></script>
+    <script>
+        // 전역 변수 설정 (advisor.html과 동일한 환경 시뮬레이션)
+        window.currentManager = '김서연';
+        window.analysisResults = {};
+        
+        // 로딩/상태 표시 함수들 (advisor.html 함수 시뮬레이션)
+        function showStatus(message, type) {
+            console.log(`[${type.toUpperCase()}] ${message}`);
+            updateResult(`상태: ${message}`, type);
+        }
+        
+        function showLoading(show) {
+            console.log(`로딩: ${show ? '시작' : '완료'}`);
+        }
+        
+        function updateProgress(percent) {
+            console.log(`진행률: ${percent}%`);
+        }
+        
+        function autoSwitchTab(tab) {
+            console.log(`탭 전환: ${tab}`);
+        }
+        
+        function updateResult(content, type = 'info') {
+            const resultDiv = document.getElementById('result');
+            const resultContent = document.getElementById('resultContent');
+            
+            resultDiv.style.display = 'block';
+            resultDiv.className = `result ${type}`;
+            resultContent.textContent = content;
+        }
+        
+        async function testDataLoad() {
+            updateResult('데이터 로드 테스트 중...', 'loading');
+            
+            try {
+                const data = await loadManagerRecommendationsData();
+                if (data && data.manager_data) {
+                    const managers = Object.keys(data.manager_data);
+                    const totalRecs = Object.values(data.manager_data)
+                        .reduce((sum, mgr) => sum + mgr.manager_info.recommendations_count, 0);
+                    
+                    updateResult(`✅ 데이터 로드 성공!
+담당자: ${managers.length}명 (${managers.join(', ')})
+총 추천 건수: ${totalRecs.toLocaleString()}개
+엔진 버전: ${data.engine_version}`, 'info');
+                } else {
+                    updateResult('❌ 데이터가 비어있거나 형식이 올바르지 않습니다.', 'error');
+                }
+            } catch (error) {
+                updateResult(`❌ 데이터 로드 실패: ${error.message}`, 'error');
+            }
+        }
+        
+        async function testRecommendation() {
+            updateResult('김서연 담당자 오잘탄 추천 테스트 중...', 'loading');
+            
+            try {
+                const recs = await findManagerRecommendationsForProduct('오잘탄', '김서연');
+                
+                if (recs && recs.length > 0) {
+                    const sample = recs[0];
+                    updateResult(`✅ 추천 데이터 검색 성공!
+품목: 오잘탄
+담당자: 김서연
+추천 건수: ${recs.length}개
+
+첫 번째 추천:
+- 거래처: ${sample.거래처명}
+- 성공확률: ${sample.성공확률}%
+- 예상매출: ${sample.예상매출?.toLocaleString()}원
+- 진료과: ${sample.진료과}
+- 추천이유: ${sample.추천이유}`, 'info');
+                } else {
+                    updateResult('❌ 해당 품목의 추천 데이터를 찾을 수 없습니다.', 'error');
+                }
+            } catch (error) {
+                updateResult(`❌ 추천 검색 실패: ${error.message}`, 'error');
+            }
+        }
+        
+        async function testFullIntegration() {
+            updateResult('전체 통합 테스트 중...', 'loading');
+            
+            try {
+                // advisor.html과 동일한 방식으로 전체 함수 호출
+                await generateSmartAIRecommendationsWithManager('오잘탄');
+                
+                // 결과 확인
+                if (window.analysisResults && window.analysisResults.aiRecommendations) {
+                    const recs = window.analysisResults.aiRecommendations;
+                    const avgConfidence = recs.length > 0 
+                        ? Math.round(recs.reduce((sum, r) => sum + (r.confidence || 0), 0) / recs.length) 
+                        : 0;
+                    const totalSales = recs.reduce((sum, r) => 
+                        sum + (r.strategies?.[0]?.expectedSales || 0), 0);
+                    
+                    updateResult(`🎉 전체 통합 테스트 성공!
+품목: 오잘탄
+담당자: 김서연
+변환된 추천: ${recs.length}개
+평균 신뢰도: ${avgConfidence}%
+총 예상매출: ${totalSales.toLocaleString()}만원
+
+첫 번째 추천 변환 결과:
+- 거래처: ${recs[0]?.customer?.accountName}
+- 신뢰도: ${recs[0]?.confidence}%
+- 진료과: ${recs[0]?.customer?.specialty}
+- 분석: ${recs[0]?.analysis}
+- 예상매출: ${recs[0]?.strategies?.[0]?.expectedSales}만원`, 'info');
+                } else {
+                    updateResult('❌ analysisResults.aiRecommendations이 생성되지 않았습니다.', 'error');
+                }
+            } catch (error) {
+                updateResult(`❌ 통합 테스트 실패: ${error.message}`, 'error');
+            }
+        }
+    </script>
+</body>
+</html> 
