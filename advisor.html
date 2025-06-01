@@ -90,6 +90,13 @@
             color: #a1a1aa;
             font-size: 0.9rem;
             font-weight: 500;
+        }
+
+        .stat-comparison {
+            font-size: 0.75rem;
+            color: #6b7280;
+            margin-top: 5px;
+            font-style: italic;
             cursor: pointer;
             transition: all 0.3s ease;
             display: flex;
@@ -352,6 +359,13 @@
             border-radius: 10px;
             margin: 15px 0;
             font-weight: 500;
+        }
+
+        .stat-comparison {
+            font-size: 0.75rem;
+            color: #6b7280;
+            margin-top: 5px;
+            font-style: italic;
             border-left: 4px solid;
         }
 
@@ -437,6 +451,13 @@
             font-size: 0.85rem;
             color: #9ca3af;
             font-weight: 500;
+        }
+
+        .stat-comparison {
+            font-size: 0.75rem;
+            color: #6b7280;
+            margin-top: 5px;
+            font-style: italic;
         }
 
         .chart-container {
@@ -1081,6 +1102,8 @@
 <script src="customer_recommendations_integration.js"></script>
 <script src="customer_status_checker.js"></script>
 <script src="segment_ai_comments.js"></script>
+<script src="analysis_save_load.js"></script>
+<script src="enhanced_stats_display.js"></script>
 </head>
 <body>
     <div class="background-pattern"></div>
@@ -1279,7 +1302,14 @@
                                    onkeyup="handleInstantSearchAdvisor(event)"
                                    oninput="showSearchSuggestionsAdvisor()">
                             <button onclick="performInstantSearchAdvisor()" 
-                                    style="background: linear-gradient(135deg, #00d4ff 0%, #7c3aed 100%); color: white; border: none; padding: 12px 20px; border-radius: 8px; cursor: pointer; font-weight: 500; transition: all 0.3s ease; box-shadow: 0 4px 15px rgba(0, 212, 255, 0.3);">
+                                    style="background: linear-gradient(135deg, #00d4ff 0%, #7c3aed 100%); color: white; border: none; padding: 12px 20px; border-radius: 8px; cursor: pointer; font-weight: 500;
+        }
+
+        .stat-comparison {
+            font-size: 0.75rem;
+            color: #6b7280;
+            margin-top: 5px;
+            font-style: italic; transition: all 0.3s ease; box-shadow: 0 4px 15px rgba(0, 212, 255, 0.3);">
                                 🚀 SmartAI 검색
                             </button>
                         </div>
@@ -1319,6 +1349,7 @@
         // 전역 변수들
         var salesData = [];
         var processedData = {};
+        var originalProcessedData = {}; // 전체 데이터 보존용
         var analysisResults = {};
         var librariesLoaded = false;
         var salesMap = null;
@@ -1990,6 +2021,7 @@
                         preprocessData();
                         showStatus(`데이터 로드 완료: ${salesData.length.toLocaleString()}개 레코드`, 'success');
                         enableAnalysisButtons();
+                initializeOriginalData();
                         updateProgress(100);
                         showLoading(false);
                         
@@ -2179,6 +2211,7 @@
                 preprocessData();
                 showStatus(`월별 집계 데모 데이터 생성 완료: ${salesData.length.toLocaleString()}개 레코드 (${accounts}개 거래처, ${products}개 품목군, ${months}개월)`, 'success');
                 enableAnalysisButtons();
+                initializeOriginalData();
                 updateProgress(100);
                 showLoading(false);
                 
@@ -2247,6 +2280,11 @@
                 recentMonthAccounts: uniqBy(recentMonthData.filter(row => row['총매출'] > 0), '거래처코드').length, // 최근 월 활성 거래처 (매출 > 0)
                 recentMonthProducts: uniqBy(recentMonthData, '품목군').length // 최근 월 거래 품목
             };
+
+            // 전체 데이터 보존 (담당자 선택 시 비교용)
+            if (!window.originalProcessedData || !window.originalProcessedData.totalRecords) {
+                window.originalProcessedData = { ...processedData };
+            } 
 
             // 지도 업데이트
             setTimeout(() => {
@@ -2443,7 +2481,14 @@
                                     <td><span class="clickable-product" onclick="showProductCustomers('${item.product}')" style="color: #00d4ff; cursor: pointer; text-decoration: underline;">${item.product}</span></td>
                                     <td><strong>${Math.round(item.recentMonthSales / 10000).toLocaleString()}</strong>만원</td>
                                     <td>${item.accountCount}개</td>
-                                    <td><span style="color: #10b981; font-weight: 500;">${((item.recentMonthSales / processedData.recentMonthSales) * 100).toFixed(1)}%</span></td>
+                                    <td><span style="color: #10b981; font-weight: 500;
+        }
+
+        .stat-comparison {
+            font-size: 0.75rem;
+            color: #6b7280;
+            margin-top: 5px;
+            font-style: italic;">${((item.recentMonthSales / processedData.recentMonthSales) * 100).toFixed(1)}%</span></td>
                                 </tr>
                             `).join('')}
                         </tbody>
@@ -2477,7 +2522,14 @@
                                     <td><strong>${item.manager}</strong></td>
                                     <td>${Math.round(item.recentMonthSales / 10000).toLocaleString()}만원</td>
                                     <td>${item.accountCount}개</td>
-                                    <td><span style="color: #10b981; font-weight: 500;">${((item.recentMonthSales / processedData.recentMonthSales) * 100).toFixed(1)}%</span></td>
+                                    <td><span style="color: #10b981; font-weight: 500;
+        }
+
+        .stat-comparison {
+            font-size: 0.75rem;
+            color: #6b7280;
+            margin-top: 5px;
+            font-style: italic;">${((item.recentMonthSales / processedData.recentMonthSales) * 100).toFixed(1)}%</span></td>
                                     <td>${item.productCount}개</td>
                                 </tr>
                             `).join('')}
@@ -4351,7 +4403,14 @@
                                     <td>${item.product}</td>
                                     <td>${Math.round(item.totalSales / 10000).toLocaleString()}만원</td>
                                     <td>${item.accountCount}개</td>
-                                    <td><span style="color: #10b981; font-weight: 500;">${((item.recentMonthSales / processedData.recentMonthSales) * 100).toFixed(1)}%</span></td>
+                                    <td><span style="color: #10b981; font-weight: 500;
+        }
+
+        .stat-comparison {
+            font-size: 0.75rem;
+            color: #6b7280;
+            margin-top: 5px;
+            font-style: italic;">${((item.recentMonthSales / processedData.recentMonthSales) * 100).toFixed(1)}%</span></td>
                                 </tr>
                             `).join('')}
                         </tbody>
@@ -4771,6 +4830,7 @@
                                 preprocessData();
                                 showStatus(`자동 로드 완료: ${salesData.length.toLocaleString()}개 레코드`, 'success');
                                 enableAnalysisButtons();
+                initializeOriginalData();
                                 showManualUploadButton(); // 수동 업로드 버튼 표시
                                 updateProgress(100);
                                 showLoading(false);
@@ -5327,8 +5387,8 @@ ${segmentContext}
         function updateManagerFocus(managerName) {
             resetManagerFocus();
             applyManagerFocus(managerName);
-            updateRegionalMap();
-        }
+                    updateRegionalMap();
+                }
 
         // 담당자 선택 시 지역 포커스 업데이트
         function handleManagerChange(event) {
