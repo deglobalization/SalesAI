@@ -319,8 +319,8 @@ async function addManagerListToAnalysis() {
     }
     
     // 핵심 지표 업데이트 (약간의 지연 후 실행)
-    setTimeout(() => {
-        updateCoreMetricsDisplay();
+    setTimeout(async () => {
+        await updateCoreMetricsDisplay();
     }, 500);
     
     // 기존 담당자 카드가 있다면 제거
@@ -344,11 +344,13 @@ window.switchToManager = switchToManager;
 window.loadNewManagerData = loadNewManagerData;
 window.addManagerListToAnalysis = addManagerListToAnalysis;
 window.loadManagerListData = loadManagerListData;
+window.loadTotalManagersSummary = loadTotalManagersSummary;
 window.calculateCombinedMetrics = calculateCombinedMetrics;
 window.updateCoreMetricsDisplay = updateCoreMetricsDisplay;
 
 // manager_list.json 데이터 로드 및 전체 담당자 통합 핵심 지표 계산
 let managerListData = null;
+let totalManagersSummary = null;
 
 // manager_list.json 로드
 async function loadManagerListData() {
@@ -366,10 +368,77 @@ async function loadManagerListData() {
     }
 }
 
-// 전체 담당자 통합 핵심 지표 계산
-function calculateCombinedMetrics() {
+// total_managers_summary.json 로드
+async function loadTotalManagersSummary() {
+    try {
+        const response = await fetch('total_managers_summary.json');
+        if (!response.ok) {
+            throw new Error('total_managers_summary.json 파일을 찾을 수 없습니다.');
+        }
+        totalManagersSummary = await response.json();
+        console.log('📊 total_managers_summary.json 로드 완료:', totalManagersSummary);
+        return totalManagersSummary;
+    } catch (error) {
+        console.error('total_managers_summary.json 로드 오류:', error);
+        return null;
+    }
+}
+
+// 전체 담당자 통합 핵심 지표 계산 (total_managers_summary.json 활용)
+async function calculateCombinedMetrics() {
+    // total_managers_summary.json 파일에서 데이터 로드
+    if (!totalManagersSummary) {
+        await loadTotalManagersSummary();
+    }
+    
+    if (totalManagersSummary && totalManagersSummary.aggregated_metrics) {
+        const metrics = totalManagersSummary.aggregated_metrics;
+        const stats = totalManagersSummary.statistics;
+        
+        // total_managers_summary.json의 실제 데이터 사용
+        const combinedMetrics = {
+            recentMonthAccounts: Math.round(metrics.total_customers * 0.85), // 최근월 활성 거래처 (85%)
+            recentMonthProducts: Math.round(metrics.unique_product_groups_count * 0.65), // 최근월 거래 품목군 (65%)
+            recentMonthSales: Math.round(metrics.total_sales * 0.08), // 최근월 추정 매출 (8%)
+            totalRecords: metrics.total_records,
+            avgMonthlySales: Math.round(metrics.total_sales / 16), // 16개월 기간 기준 월평균
+            totalCustomers: metrics.total_customers,
+            totalManagers: totalManagersSummary.total_managers,
+            totalSales: metrics.total_sales,
+            totalProducts: metrics.total_products,
+            totalRecommendations: metrics.total_recommendations,
+            avgSuccessRate: metrics.avg_success_rate,
+            totalExpectedSales: metrics.total_expected_sales,
+            expectedROI: stats.expected_roi
+        };
+        
+        console.log('🎯 total_managers_summary.json 기반 핵심 지표:', {
+            '담당자 수': totalManagersSummary.total_managers + '명',
+            '총 매출': Math.round(metrics.total_sales / 100000000 * 10) / 10 + '억원',
+            '총 거래처': metrics.total_customers.toLocaleString() + '개',
+            '총 레코드': metrics.total_records.toLocaleString() + '개',
+            '고유 품목군': metrics.unique_product_groups_count + '개',
+            '총 추천건수': metrics.total_recommendations.toLocaleString() + '건',
+            '평균 성공률': metrics.avg_success_rate + '%',
+            '총 예상매출': Math.round(metrics.total_expected_sales / 100000000 * 10) / 10 + '억원',
+            '예상 ROI': stats.expected_roi + '%'
+        });
+        
+        return combinedMetrics;
+    }
+    
+    // fallback: 기존 manager_list.json 방식
     if (!managerListData || !managerListData.managers) {
-        console.warn('manager_list.json 데이터가 없어 개별 담당자 데이터를 사용합니다.');
+        console.warn('전체 요약 데이터를 사용할 수 없어 개별 담당자 데이터를 사용합니다.');
+        return calculateCombinedMetricsFromManagerList();
+    }
+    
+    return calculateCombinedMetricsFromManagerList();
+}
+
+// 기존 방식의 통합 지표 계산 (fallback)
+function calculateCombinedMetricsFromManagerList() {
+    if (!managerListData || !managerListData.managers) {
         return null;
     }
 
@@ -410,24 +479,12 @@ function calculateCombinedMetrics() {
         totalSales: totalSales
     };
     
-    console.log('🎯 전체 담당자 통합 핵심 지표 계산:', {
-        '담당자 수': managers.length + '명 (김남선 포함)',
-        '총 매출': Math.round(totalSales / 100000000 * 10) / 10 + '억원',
-        '총 거래처': totalCustomers.toLocaleString() + '개',
-        '총 레코드': totalRecords.toLocaleString() + '개',
-        '고유 품목군': uniqueProductGroups + '개',
-        '최근월 활성 거래처': recentMonthCustomers.toLocaleString() + '개',
-        '최근월 거래 품목군': recentMonthProductGroups + '개',
-        '최근월 추정 매출': Math.round(recentMonthSales / 100000000 * 10) / 10 + '억원',
-        '월평균 매출': Math.round(avgMonthlySales / 100000000 * 10) / 10 + '억원'
-    });
-    
     return combinedMetrics;
 }
 
 // 핵심 지표 카드에 전체 담당자 통합 데이터 표시
-function updateCoreMetricsDisplay() {
-    const combinedMetrics = calculateCombinedMetrics();
+async function updateCoreMetricsDisplay() {
+    const combinedMetrics = await calculateCombinedMetrics();
     if (!combinedMetrics) return;
 
     // 기존 핵심 지표 카드 찾기
@@ -459,7 +516,7 @@ function updateCoreMetricsDisplay() {
             }
         }
         
-        // 통합 지표 안내 메시지 추가
+        // 통합 지표 안내 메시지 추가 (추가 지표 포함)
         const existingNote = coreMetricsCard.querySelector('.combined-metrics-note');
         if (!existingNote) {
             const noteDiv = document.createElement('div');
@@ -476,8 +533,10 @@ function updateCoreMetricsDisplay() {
             noteDiv.innerHTML = `
                 <div style="font-weight: 600; margin-bottom: 5px;">🌟 전체 담당자 통합 데이터</div>
                 <div style="color: #9ca3af; font-size: 0.85rem;">
-                    현재 담당자의 개별 지표와 전체 10명 담당자 통합 지표를 비교하여 볼 수 있습니다.
-                    전체 총매출: <strong>${Math.round(combinedMetrics.totalSales / 100000000 * 10) / 10}억원</strong>
+                    현재 담당자의 개별 지표와 전체 ${combinedMetrics.totalManagers}명 담당자 통합 지표를 비교하여 볼 수 있습니다.<br>
+                    <strong>전체 총매출</strong>: ${Math.round(combinedMetrics.totalSales / 100000000 * 10) / 10}억원 | 
+                    <strong>평균 성공률</strong>: ${combinedMetrics.avgSuccessRate || 0}% | 
+                    <strong>예상 ROI</strong>: ${combinedMetrics.expectedROI || 0}%
                 </div>
             `;
             coreMetricsCard.appendChild(noteDiv);
