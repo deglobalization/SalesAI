@@ -1,0 +1,67 @@
+{
+  "split_date": "2025-05-31T00:39:22.521542",
+  "total_managers": 10,
+  "total_records": 447281,
+  "managers": {
+    "김서연": {
+      "filename": "manager_김서연.csv",
+      "filepath": "manager_data/manager_김서연.csv",
+      "record_count": 55941,
+      "safe_name": "김서연"
+    },
+    "이희영": {
+      "filename": "manager_이희영.csv",
+      "filepath": "manager_data/manager_이희영.csv",
+      "record_count": 41077,
+      "safe_name": "이희영"
+    },
+    "김인용": {
+      "filename": "manager_김인용.csv",
+      "filepath": "manager_data/manager_김인용.csv",
+      "record_count": 39073,
+      "safe_name": "김인용"
+    },
+    "박경현": {
+      "filename": "manager_박경현.csv",
+      "filepath": "manager_data/manager_박경현.csv",
+      "record_count": 47046,
+      "safe_name": "박경현"
+    },
+    "이한솔B": {
+      "filename": "manager_이한솔B.csv",
+      "filepath": "manager_data/manager_이한솔B.csv",
+      "record_count": 55733,
+      "safe_name": "이한솔B"
+    },
+    "이창준A": {
+      "filename": "manager_이창준A.csv",
+      "filepath": "manager_data/manager_이창준A.csv",
+      "record_count": 47763,
+      "safe_name": "이창준A"
+    },
+    "김병민": {
+      "filename": "manager_김병민.csv",
+      "filepath": "manager_data/manager_김병민.csv",
+      "record_count": 38214,
+      "safe_name": "김병민"
+    },
+    "김관태": {
+      "filename": "manager_김관태.csv",
+      "filepath": "manager_data/manager_김관태.csv",
+      "record_count": 50763,
+      "safe_name": "김관태"
+    },
+    "이지형": {
+      "filename": "manager_이지형.csv",
+      "filepath": "manager_data/manager_이지형.csv",
+      "record_count": 46503,
+      "safe_name": "이지형"
+    },
+    "이인철": {
+      "filename": "manager_이인철.csv",
+      "filepath": "manager_data/manager_이인철.csv",
+      "record_count": 25168,
+      "safe_name": "이인철"
+    }
+  }
+}
