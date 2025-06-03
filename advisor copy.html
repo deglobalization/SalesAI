@@ -1,0 +1,3198 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>영업사원 AI 비서 - 데이터 분석 플랫폼</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: #0a0b0d;
+            color: #ffffff;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        .background-pattern {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            opacity: 0.03;
+            background-image: 
+                radial-gradient(circle at 20% 50%, #00d4ff 0%, transparent 50%),
+                radial-gradient(circle at 80% 20%, #ff6b35 0%, transparent 50%),
+                radial-gradient(circle at 40% 80%, #7c3aed 0%, transparent 50%);
+            pointer-events: none;
+            z-index: -1;
+        }
+
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+            padding: 20px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 40px;
+            padding: 40px;
+            background: linear-gradient(135deg, rgba(0, 212, 255, 0.1), rgba(124, 58, 237, 0.1));
+            border-radius: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+        }
+
+        .header-content {
+            flex: 1;
+            text-align: center;
+        }
+
+        .map-container {
+            width: 400px;
+            height: 300px;
+            border-radius: 15px;
+            overflow: hidden;
+            border: 2px solid rgba(255, 255, 255, 0.1);
+            background: rgba(17, 24, 39, 0.8);
+            position: relative;
+        }
+
+        .map-title {
+            position: absolute;
+            top: 10px;
+            left: 15px;
+            background: rgba(17, 24, 39, 0.9);
+            color: #00d4ff;
+            padding: 5px 10px;
+            border-radius: 8px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            z-index: 1000;
+            border: 1px solid rgba(0, 212, 255, 0.3);
+        }
+
+        #salesMap {
+            width: 100%;
+            height: 100%;
+            border-radius: 13px;
+        }
+
+        /* 지역 하이라이트 스타일 */
+        .leaflet-interactive.top-region {
+            filter: drop-shadow(0 0 10px rgba(255, 107, 53, 0.8));
+            transition: all 0.3s ease;
+        }
+
+        .leaflet-interactive.region-highlight {
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .leaflet-interactive.region-highlight:hover {
+            filter: brightness(1.3) drop-shadow(0 0 8px currentColor);
+            transform: scale(1.02);
+        }
+
+        /* 세부 지역 하이라이트 스타일 */
+        .leaflet-interactive.top-detailed-region {
+            filter: drop-shadow(0 0 15px rgba(255, 23, 68, 1.0));
+            transition: all 0.2s ease;
+            z-index: 1000;
+        }
+
+        .leaflet-interactive.detailed-region-highlight {
+            transition: all 0.2s ease;
+            cursor: pointer;
+            z-index: 999;
+        }
+
+        .leaflet-interactive.detailed-region-highlight:hover {
+            filter: brightness(1.4) drop-shadow(0 0 12px currentColor);
+            transform: scale(1.05);
+        }
+
+        /* 세부 지역 라벨 스타일 */
+        .detailed-region-label div {
+            transition: all 0.3s ease;
+        }
+
+        .detailed-region-label div:hover {
+            transform: scale(1.1) !important;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.6) !important;
+        }
+
+        /* 팝업 스타일 개선 */
+        .leaflet-popup-content-wrapper {
+            background: rgba(17, 24, 39, 0.95) !important;
+            border-radius: 12px !important;
+            border: 1px solid rgba(255, 255, 255, 0.1) !important;
+            backdrop-filter: blur(10px) !important;
+        }
+
+        .leaflet-popup-tip {
+            background: rgba(17, 24, 39, 0.95) !important;
+            border: 1px solid rgba(255, 255, 255, 0.1) !important;
+        }
+
+        .header h1 {
+            font-size: 3rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, #00d4ff, #7c3aed);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 15px;
+            letter-spacing: -0.02em;
+        }
+
+        .header p {
+            font-size: 1.2rem;
+            color: #a1a1aa;
+            font-weight: 400;
+        }
+
+        .control-panel {
+            background: rgba(17, 24, 39, 0.8);
+            border-radius: 20px;
+            padding: 30px;
+            margin-bottom: 40px;
+            border: 1px solid rgba(75, 85, 99, 0.3);
+            backdrop-filter: blur(20px);
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5);
+        }
+
+        .file-input-area {
+            border: 2px dashed rgba(75, 85, 99, 0.5);
+            border-radius: 15px;
+            padding: 40px;
+            text-align: center;
+            transition: all 0.3s ease;
+            margin-bottom: 25px;
+            background: rgba(31, 41, 55, 0.3);
+        }
+
+        .file-input-area:hover, .file-input-area.dragover {
+            border-color: #00d4ff;
+            background: rgba(0, 212, 255, 0.05);
+        }
+
+        .file-input {
+            display: none;
+        }
+
+        .file-input-label, .demo-data-btn {
+            display: inline-block;
+            padding: 14px 28px;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 600;
+            font-size: 0.95rem;
+            border: none;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .file-input-label {
+            background: linear-gradient(135deg, #00d4ff, #0ea5e9);
+            color: white;
+            margin-right: 15px;
+        }
+
+        .demo-data-btn {
+            background: linear-gradient(135deg, #10b981, #059669);
+            color: white;
+        }
+
+        .file-input-label:hover, .demo-data-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.3);
+        }
+
+        .analysis-controls {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border: 1px solid rgba(75, 85, 99, 0.5);
+            border-radius: 10px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            background: rgba(31, 41, 55, 0.8);
+            color: #ffffff;
+            font-size: 0.9rem;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn:hover:not(:disabled) {
+            transform: translateY(-1px);
+            border-color: #00d4ff;
+            box-shadow: 0 5px 15px rgba(0, 212, 255, 0.2);
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 4px;
+            background: rgba(75, 85, 99, 0.3);
+            border-radius: 2px;
+            overflow: hidden;
+            margin: 25px 0 15px 0;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #00d4ff, #7c3aed);
+            width: 0%;
+            transition: width 0.8s ease;
+        }
+
+        .status-message {
+            padding: 15px 20px;
+            border-radius: 10px;
+            margin: 15px 0;
+            font-weight: 500;
+            border-left: 4px solid;
+        }
+
+        .status-success {
+            background: rgba(16, 185, 129, 0.1);
+            color: #10b981;
+            border-left-color: #10b981;
+        }
+
+        .status-error {
+            background: rgba(239, 68, 68, 0.1);
+            color: #ef4444;
+            border-left-color: #ef4444;
+        }
+
+        .status-info {
+            background: rgba(0, 212, 255, 0.1);
+            color: #00d4ff;
+            border-left-color: #00d4ff;
+        }
+
+        .analysis-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            gap: 25px;
+            margin-top: 30px;
+        }
+
+        .analysis-card {
+            background: rgba(17, 24, 39, 0.8);
+            border-radius: 20px;
+            padding: 25px;
+            border: 1px solid rgba(75, 85, 99, 0.3);
+            backdrop-filter: blur(20px);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .analysis-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+        }
+
+        .analysis-card h3 {
+            color: #ffffff;
+            margin-bottom: 20px;
+            font-size: 1.3rem;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 20px;
+            margin-top: 15px;
+        }
+
+        .stat-item {
+            text-align: center;
+            padding: 15px;
+            background: rgba(31, 41, 55, 0.5);
+            border-radius: 12px;
+            border: 1px solid rgba(75, 85, 99, 0.2);
+        }
+
+        .stat-value {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: #00d4ff;
+            margin-bottom: 5px;
+        }
+
+        .stat-label {
+            font-size: 0.85rem;
+            color: #9ca3af;
+            font-weight: 500;
+        }
+
+        .chart-container {
+            position: relative;
+            height: 300px;
+            margin: 20px 0;
+        }
+
+        .table-container {
+            overflow-x: auto;
+            margin-top: 15px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background: rgba(31, 41, 55, 0.3);
+            border-radius: 12px;
+            overflow: hidden;
+        }
+
+        th, td {
+            padding: 12px 15px;
+            text-align: left;
+            border-bottom: 1px solid rgba(75, 85, 99, 0.2);
+        }
+
+        th {
+            background: rgba(17, 24, 39, 0.8);
+            color: #00d4ff;
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+
+        td {
+            color: #d1d5db;
+            font-size: 0.9rem;
+        }
+
+        tr:hover {
+            background: rgba(75, 85, 99, 0.1);
+        }
+
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+            backdrop-filter: blur(10px);
+        }
+
+        .loading-spinner {
+            width: 60px;
+            height: 60px;
+            border: 4px solid rgba(0, 212, 255, 0.2);
+            border-top: 4px solid #00d4ff;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        /* 매출액 기준 세그먼트 스타일 */
+        .segment-sales-premium {
+            background: linear-gradient(135deg, rgba(147, 51, 234, 0.2), rgba(126, 34, 206, 0.1));
+            border-left: 4px solid #9333ea;
+        }
+
+        .segment-sales-high {
+            background: linear-gradient(135deg, rgba(16, 185, 129, 0.2), rgba(5, 150, 105, 0.1));
+            border-left: 4px solid #10b981;
+        }
+
+        .segment-sales-medium {
+            background: linear-gradient(135deg, rgba(59, 130, 246, 0.2), rgba(37, 99, 235, 0.1));
+            border-left: 4px solid #3b82f6;
+        }
+
+        .segment-sales-low {
+            background: linear-gradient(135deg, rgba(107, 114, 128, 0.2), rgba(75, 85, 99, 0.1));
+            border-left: 4px solid #6b7280;
+        }
+
+        /* BCG Matrix 세그먼트 스타일 */
+        .segment-bcg-star {
+            background: linear-gradient(135deg, rgba(255, 215, 0, 0.2), rgba(255, 193, 7, 0.1));
+            border-left: 4px solid #FFD700;
+        }
+
+        .segment-bcg-cash-cow {
+            background: linear-gradient(135deg, rgba(34, 197, 94, 0.2), rgba(22, 163, 74, 0.1));
+            border-left: 4px solid #22C55E;
+        }
+
+        .segment-bcg-question-mark {
+            background: linear-gradient(135deg, rgba(245, 158, 11, 0.2), rgba(217, 119, 6, 0.1));
+            border-left: 4px solid #f59e0b;
+        }
+
+        .segment-bcg-dog {
+            background: linear-gradient(135deg, rgba(239, 68, 68, 0.2), rgba(220, 38, 38, 0.1));
+            border-left: 4px solid #ef4444;
+        }
+
+        .segment-bcg-basic {
+            background: linear-gradient(135deg, rgba(107, 114, 128, 0.2), rgba(75, 85, 99, 0.1));
+            border-left: 4px solid #6b7280;
+        }
+
+        .recommendation-item {
+            background: rgba(31, 41, 55, 0.5);
+            padding: 20px;
+            border-radius: 12px;
+            margin-bottom: 15px;
+            border-left: 4px solid #7c3aed;
+        }
+
+        .recommendation-title {
+            font-weight: 600;
+            color: #ffffff;
+            margin-bottom: 8px;
+            font-size: 1.1rem;
+        }
+
+        .recommendation-description {
+            color: #d1d5db;
+            line-height: 1.6;
+            margin-bottom: 10px;
+        }
+
+        .recommendation-metrics {
+            display: flex;
+            gap: 20px;
+            font-size: 0.9rem;
+            color: #9ca3af;
+        }
+
+        .export-formats {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .export-btn {
+            padding: 8px 16px;
+            background: rgba(124, 58, 237, 0.8);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            transition: all 0.3s ease;
+        }
+
+        .export-btn:hover {
+            background: rgba(124, 58, 237, 1);
+            transform: translateY(-1px);
+        }
+
+        .clickable-product {
+            transition: all 0.3s ease;
+        }
+
+        .clickable-product:hover {
+            color: #7c3aed !important;
+            text-shadow: 0 0 8px rgba(0, 212, 255, 0.5);
+            transform: scale(1.05);
+        }
+
+        .clickable-segment {
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .clickable-segment:hover {
+            transform: translateY(-3px) scale(1.05);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.4);
+            filter: brightness(1.2);
+        }
+
+        .clickable-segment:active {
+            transform: translateY(-1px) scale(1.02);
+        }
+
+        .clickable-segment::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(45deg, rgba(255, 255, 255, 0.1), transparent);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .clickable-segment:hover::before {
+            opacity: 1;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 15px;
+            }
+            
+            .header {
+                flex-direction: column;
+                gap: 20px;
+                text-align: center;
+            }
+            
+            .header-content {
+                flex: none;
+            }
+            
+            .map-container {
+                width: 100%;
+                height: 250px;
+            }
+            
+            .header h1 {
+                font-size: 2rem;
+            }
+            
+            .analysis-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .analysis-controls {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            
+            .btn {
+                width: 100%;
+                text-align: center;
+            }
+        }
+        
+
+    </style>
+    
+    <!-- Chart.js 라이브러리 -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Papa Parse (CSV 파싱) -->
+    <script src="https://unpkg.com/papaparse@5.4.1/papaparse.min.js"></script>
+    <!-- Leaflet 지도 라이브러리 -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+</head>
+<body>
+    <div class="background-pattern"></div>
+    
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="loading-spinner"></div>
+    </div>
+
+    <div class="container">
+        <div class="header">
+            <div class="header-content">
+                <h1>🤖 영업사원 AI 비서</h1>
+                <p>데이터 기반 영업 분석 및 추천 시스템</p>
+            </div>
+            <div class="map-container">
+                <div class="map-title">📍 지역 지도</div>
+                <div id="salesMap"></div>
+            </div>
+        </div>
+
+        <div class="control-panel">
+            <div class="file-input-area" id="fileInputArea" style="display: none;">
+                <input type="file" id="fileInput" class="file-input" accept=".csv,.xlsx,.xls">
+                <label for="fileInput" class="file-input-label">📁 CSV 파일 업로드</label>
+                <button class="demo-data-btn" onclick="generateDemoData()">🎯 데모 데이터 생성</button>
+                <p style="margin-top: 15px; color: #9ca3af; font-size: 0.9rem;">
+                    CSV 파일을 드래그 앤 드롭하거나 버튼을 클릭하여 업로드하세요
+                </p>
+            </div>
+
+            <div class="progress-bar">
+                <div class="progress-fill" id="progressFill"></div>
+            </div>
+
+            <div id="statusMessage" class="status-message hidden">
+                상태 메시지가 여기에 표시됩니다.
+            </div>
+
+            <div class="analysis-controls">
+                <button class="btn" id="basicAnalysisBtn" onclick="performBasicAnalysis()" disabled>
+                    📊 기본 분석
+                </button>
+                <button class="btn" id="segmentationBtn" onclick="performCustomerSegmentation()" disabled>
+                    🎯 고객 세분화
+                </button>
+                <button class="btn" id="recommendationBtn" onclick="generateRecommendations()" disabled>
+                    💡 추천 생성
+                </button>
+                <button class="btn" id="exportBtn" onclick="exportAnalysis()" disabled>
+                    📤 결과 내보내기
+                </button>
+                <button class="btn" id="manualUploadBtn" onclick="showManualUpload()" style="display: none;">
+                    📁 다른 파일 업로드
+                </button>
+            </div>
+        </div>
+
+        <div class="analysis-grid" id="analysisGrid">
+            <!-- 분석 결과가 여기에 동적으로 추가됩니다 -->
+        </div>
+    </div>
+
+    <script>
+        // 전역 변수들
+        let salesData = [];
+        let processedData = {};
+        let analysisResults = {};
+        let librariesLoaded = false;
+        let salesMap = null;
+
+        // 한국 지역 정보 (중심좌표, 경계, 지역명)
+        const regionData = {
+            '서울': { 
+                lat: 37.5665, lng: 126.9780, name: '서울특별시',
+                bounds: [[37.7, 126.7], [37.4, 127.2]] // [북서, 남동]
+            },
+            '부산': { 
+                lat: 35.1796, lng: 129.0756, name: '부산광역시',
+                bounds: [[35.4, 128.8], [35.0, 129.3]]
+            },
+            '대구': { 
+                lat: 35.8722, lng: 128.6014, name: '대구광역시',
+                bounds: [[36.0, 128.4], [35.7, 128.8]]
+            },
+            '인천': { 
+                lat: 37.4563, lng: 126.7052, name: '인천광역시',
+                bounds: [[37.7, 126.3], [37.2, 126.9]]
+            },
+            '광주': { 
+                lat: 35.1595, lng: 126.8526, name: '광주광역시',
+                bounds: [[35.3, 126.7], [35.0, 127.0]]
+            },
+            '대전': { 
+                lat: 36.3504, lng: 127.3845, name: '대전광역시',
+                bounds: [[36.5, 127.2], [36.2, 127.5]]
+            },
+            '울산': { 
+                lat: 35.5384, lng: 129.3114, name: '울산광역시',
+                bounds: [[35.7, 129.0], [35.4, 129.5]]
+            },
+            '세종': { 
+                lat: 36.4800, lng: 127.2890, name: '세종특별자치시',
+                bounds: [[36.6, 127.1], [36.3, 127.4]]
+            },
+            '경기': { 
+                lat: 37.4138, lng: 127.5183, name: '경기도',
+                bounds: [[38.0, 126.4], [36.8, 127.9]]
+            },
+            '강원': { 
+                lat: 37.8228, lng: 128.1555, name: '강원도',
+                bounds: [[38.6, 127.0], [37.0, 129.4]]
+            },
+            '충북': { 
+                lat: 36.8, lng: 127.7, name: '충청북도',
+                bounds: [[37.2, 127.2], [36.2, 128.5]]
+            },
+            '충남': { 
+                lat: 36.5, lng: 126.8, name: '충청남도',
+                bounds: [[37.1, 125.9], [36.0, 127.6]]
+            },
+            '전북': { 
+                lat: 35.7175, lng: 127.153, name: '전라북도',
+                bounds: [[36.2, 126.4], [35.2, 127.8]]
+            },
+            '전남': { 
+                lat: 34.8679, lng: 126.991, name: '전라남도',
+                bounds: [[35.4, 126.0], [34.0, 127.7]]
+            },
+            '경북': { 
+                lat: 36.4919, lng: 128.888, name: '경상북도',
+                bounds: [[37.5, 128.0], [35.7, 130.0]]
+            },
+            '경남': { 
+                lat: 35.4606, lng: 128.2132, name: '경상남도',
+                bounds: [[36.0, 127.5], [34.6, 129.2]]
+            },
+            '제주': { 
+                lat: 33.4996, lng: 126.5312, name: '제주특별자치도',
+                bounds: [[33.6, 126.1], [33.1, 127.0]]
+            }
+        };
+
+        // 시/군/구 세부 지역 정보
+        const detailedRegionData = {
+            // 서울 구
+            '강남': { lat: 37.5173, lng: 127.0473, name: '강남구', parent: '서울', bounds: [[37.54, 127.02], [37.49, 127.07]] },
+            '강북': { lat: 37.6379, lng: 127.0258, name: '강북구', parent: '서울', bounds: [[37.66, 127.00], [37.61, 127.05]] },
+            '송파': { lat: 37.5145, lng: 127.1059, name: '송파구', parent: '서울', bounds: [[37.54, 127.08], [37.49, 127.13]] },
+            '마포': { lat: 37.5663, lng: 126.9019, name: '마포구', parent: '서울', bounds: [[37.59, 126.88], [37.54, 126.93]] },
+            '용산': { lat: 37.5326, lng: 126.9906, name: '용산구', parent: '서울', bounds: [[37.56, 126.97], [37.51, 127.02]] },
+            '종로': { lat: 37.5735, lng: 126.9788, name: '종로구', parent: '서울', bounds: [[37.60, 126.96], [37.55, 127.01]] },
+            '서초': { lat: 37.4837, lng: 127.0324, name: '서초구', parent: '서울', bounds: [[37.51, 127.01], [37.46, 127.06]] },
+            '관악': { lat: 37.4781, lng: 126.9515, name: '관악구', parent: '서울', bounds: [[37.50, 126.93], [37.45, 126.98]] },
+            '동작': { lat: 37.5124, lng: 126.9393, name: '동작구', parent: '서울', bounds: [[37.54, 126.92], [37.49, 126.97]] },
+            '영등포': { lat: 37.5264, lng: 126.8963, name: '영등포구', parent: '서울', bounds: [[37.55, 126.88], [37.50, 126.93]] },
+            
+            // 경기도 주요 시
+            '수원': { lat: 37.2636, lng: 127.0286, name: '수원시', parent: '경기', bounds: [[37.32, 126.98], [37.21, 127.08]] },
+            '성남': { lat: 37.4201, lng: 127.1262, name: '성남시', parent: '경기', bounds: [[37.47, 127.08], [37.37, 127.17]] },
+            '고양': { lat: 37.6584, lng: 126.8320, name: '고양시', parent: '경기', bounds: [[37.72, 126.78], [37.60, 126.88]] },
+            '용인': { lat: 37.2411, lng: 127.1776, name: '용인시', parent: '경기', bounds: [[37.30, 127.13], [37.18, 127.22]] },
+            '부천': { lat: 37.5034, lng: 126.7660, name: '부천시', parent: '경기', bounds: [[37.53, 126.74], [37.48, 126.79]] },
+            '안산': { lat: 37.3219, lng: 126.8309, name: '안산시', parent: '경기', bounds: [[37.36, 126.79], [37.28, 126.87]] },
+            '안양': { lat: 37.3943, lng: 126.9568, name: '안양시', parent: '경기', bounds: [[37.42, 126.93], [37.37, 126.98]] },
+            '남양주': { lat: 37.6364, lng: 127.2167, name: '남양주시', parent: '경기', bounds: [[37.72, 127.15], [37.55, 127.28]] },
+            '화성': { lat: 37.1999, lng: 126.8310, name: '화성시', parent: '경기', bounds: [[37.28, 126.75], [37.12, 126.91]] },
+            '평택': { lat: 37.0000, lng: 127.1120, name: '평택시', parent: '경기', bounds: [[37.05, 127.06], [36.95, 127.16]] },
+            '의정부': { lat: 37.7381, lng: 127.0338, name: '의정부시', parent: '경기', bounds: [[37.77, 127.00], [37.71, 127.07]] },
+            '시흥': { lat: 37.3803, lng: 126.8028, name: '시흥시', parent: '경기', bounds: [[37.42, 126.76], [37.34, 126.85]] },
+            '파주': { lat: 37.7595, lng: 126.7804, name: '파주시', parent: '경기', bounds: [[37.82, 126.72], [37.70, 126.84]] },
+            '광명': { lat: 37.4786, lng: 126.8645, name: '광명시', parent: '경기', bounds: [[37.50, 126.84], [37.46, 126.89]] },
+            '김포': { lat: 37.6152, lng: 126.7157, name: '김포시', parent: '경기', bounds: [[37.67, 126.67], [37.56, 126.76]] },
+            '군포': { lat: 37.3617, lng: 126.9353, name: '군포시', parent: '경기', bounds: [[37.38, 126.91], [37.34, 126.96]] },
+            '이천': { lat: 37.2721, lng: 127.4350, name: '이천시', parent: '경기', bounds: [[37.32, 127.38], [37.22, 127.49]] },
+            '양주': { lat: 37.7855, lng: 127.0459, name: '양주시', parent: '경기', bounds: [[37.82, 127.00], [37.75, 127.09]] },
+            '오산': { lat: 37.1500, lng: 127.0772, name: '오산시', parent: '경기', bounds: [[37.17, 127.05], [37.13, 127.10]] },
+            '구리': { lat: 37.5943, lng: 127.1295, name: '구리시', parent: '경기', bounds: [[37.62, 127.10], [37.57, 127.16]] },
+            '하남': { lat: 37.5394, lng: 127.2148, name: '하남시', parent: '경기', bounds: [[37.57, 127.19], [37.51, 127.24]] },
+            '양평': { lat: 37.4919, lng: 127.4875, name: '양평군', parent: '경기', bounds: [[37.57, 127.40], [37.41, 127.57]] },
+            '연천': { lat: 38.0960, lng: 127.0757, name: '연천군', parent: '경기', bounds: [[38.18, 127.01], [38.01, 127.14]] },
+            
+            // 부산 구
+            '해운대': { lat: 35.1631, lng: 129.1635, name: '해운대구', parent: '부산', bounds: [[35.19, 129.14], [35.14, 129.19]] },
+            '사상': { lat: 35.1520, lng: 128.9910, name: '사상구', parent: '부산', bounds: [[35.17, 128.97], [35.13, 129.01]] },
+            '부산진': { lat: 35.1622, lng: 129.0537, name: '부산진구', parent: '부산', bounds: [[35.18, 129.03], [35.14, 129.08]] },
+            
+            // 인천 구
+            '부평': { lat: 37.5070, lng: 126.7219, name: '부평구', parent: '인천', bounds: [[37.53, 126.70], [37.48, 126.75]] },
+            '남동': { lat: 37.4470, lng: 126.7314, name: '남동구', parent: '인천', bounds: [[37.48, 126.70], [37.41, 126.76]] },
+            '계양': { lat: 37.5372, lng: 126.7379, name: '계양구', parent: '인천', bounds: [[37.56, 126.71], [37.51, 126.77]] },
+            
+            // 강원도 주요 시
+            '춘천': { lat: 37.8813, lng: 127.7298, name: '춘천시', parent: '강원', bounds: [[37.94, 127.67], [37.82, 127.79]] },
+            '원주': { lat: 37.3422, lng: 127.9202, name: '원주시', parent: '강원', bounds: [[37.39, 127.87], [37.29, 127.97]] },
+            '강릉': { lat: 37.7519, lng: 128.8761, name: '강릉시', parent: '강원', bounds: [[37.80, 128.83], [37.70, 128.92]] },
+            '속초': { lat: 38.2070, lng: 128.5918, name: '속초시', parent: '강원', bounds: [[38.24, 128.56], [38.17, 128.62]] },
+            
+            // 충청북도 주요 시
+            '청주': { lat: 36.6424, lng: 127.4890, name: '청주시', parent: '충북', bounds: [[36.70, 127.44], [36.58, 127.54]] },
+            '충주': { lat: 36.9910, lng: 127.9259, name: '충주시', parent: '충북', bounds: [[37.04, 127.88], [36.94, 127.97]] },
+            '제천': { lat: 37.1326, lng: 128.1907, name: '제천시', parent: '충북', bounds: [[37.18, 128.14], [37.09, 128.24]] },
+            
+            // 충청남도 주요 시
+            '천안': { lat: 36.8151, lng: 127.1139, name: '천안시', parent: '충남', bounds: [[36.87, 127.06], [36.76, 127.17]] },
+            '아산': { lat: 36.7898, lng: 127.0016, name: '아산시', parent: '충남', bounds: [[36.83, 126.96], [36.75, 127.04]] },
+            '서산': { lat: 36.7848, lng: 126.4503, name: '서산시', parent: '충남', bounds: [[36.82, 126.41], [36.75, 126.49]] },
+            '공주': { lat: 36.4465, lng: 127.1189, name: '공주시', parent: '충남', bounds: [[36.49, 127.08], [36.40, 127.16]] }
+        };
+
+        // 거래처명에서 지역 추정 함수 (세부 지역 우선)
+        function estimateRegionFromName(accountName) {
+            // 1. 먼저 세부 지역(시/군/구) 확인
+            for (const [detailRegion, info] of Object.entries(detailedRegionData)) {
+                if (accountName.includes(detailRegion) || accountName.includes(info.name)) {
+                    return {
+                        region: info.parent,
+                        detailedRegion: detailRegion,
+                        detailedInfo: info
+                    };
+                }
+            }
+            
+            // 2. 광역 지역명이 거래처명에 포함되어 있는지 확인
+            for (const [region, info] of Object.entries(regionData)) {
+                if (accountName.includes(region) || accountName.includes(info.name)) {
+                    return {
+                        region: region,
+                        detailedRegion: null,
+                        detailedInfo: null
+                    };
+                }
+            }
+            
+            // 3. 특정 키워드로 세부 지역 추정
+            for (const [detailRegion, info] of Object.entries(detailedRegionData)) {
+                if (accountName.includes(detailRegion)) {
+                    return {
+                        region: info.parent,
+                        detailedRegion: detailRegion,
+                        detailedInfo: info
+                    };
+                }
+            }
+            
+            // 4. 광역 지역 키워드로 추정
+            const regionKeywords = {
+                '서울': ['강서', '중구', '금천', '구로', '노원', '도봉', '성북', '서대문', '중랑', '동대문', '성동', '광진', '은평'],
+                '부산': ['동래', '남구', '북구', '사하', '금정', '연제', '수영', '강서구', '기장'],
+                '대구': ['달서', '수성', '달성', '북구', '중구', '동구', '서구', '남구'],
+                '인천': ['서구', '중구', '동구', '연수', '남구', '강화', '옹진'],
+                '경기': ['광주시', '안성', '포천', '의왕', '여주', '동두천', '과천', '가평'],
+                '강원': ['동해', '태백', '삼척', '홍천', '횡성', '영월', '평창', '정선', '철원', '화천', '양구', '인제', '고성', '양양'],
+                '충북': ['보은', '옥천', '영동', '증평', '진천', '괴산', '음성', '단양'],
+                '충남': ['보령', '논산', '계룡', '당진', '금산', '부여', '서천', '청양', '홍성', '예산', '태안'],
+                '전북': ['전주', '군산', '익산', '정읍', '남원', '김제', '완주', '진안', '무주', '장수', '임실', '순창', '고창', '부안'],
+                '전남': ['목포', '여수', '순천', '나주', '광양', '담양', '곡성', '구례', '고흥', '보성', '화순', '장흥', '강진', '해남', '영암', '무안', '함평', '영광', '장성', '완도', '진도', '신안'],
+                '경북': ['포항', '경주', '김천', '안동', '구미', '영주', '영천', '상주', '문경', '경산', '군위', '의성', '청송', '영양', '영덕', '청도', '고령', '성주', '칠곡', '예천', '봉화', '울진', '울릉'],
+                '경남': ['창원', '진주', '통영', '사천', '김해', '밀양', '거제', '양산', '의령', '함안', '창녕', '고성', '남해', '하동', '산청', '함양', '거창', '합천'],
+                '제주': ['제주시', '서귀포']
+            };
+            
+            for (const [region, keywords] of Object.entries(regionKeywords)) {
+                for (const keyword of keywords) {
+                    if (accountName.includes(keyword)) {
+                        return {
+                            region: region,
+                            detailedRegion: null,
+                            detailedInfo: null
+                        };
+                    }
+                }
+            }
+            
+            // 추정 불가능한 경우 기본값
+            return {
+                region: '기타',
+                detailedRegion: null,
+                detailedInfo: null
+            };
+        }
+
+        // 라이브러리 로드 확인
+        function ensureLibrariesLoaded() {
+            if (typeof Chart === 'undefined' || typeof Papa === 'undefined' || typeof L === 'undefined') {
+                showStatus('필요한 라이브러리를 로딩 중입니다...', 'info');
+                return false;
+            }
+            return true;
+        }
+
+        // 지도 초기화
+        function initializeMap() {
+            if (salesMap) {
+                salesMap.remove();
+            }
+
+            // 한국 중심 좌표로 지도 초기화
+            salesMap = L.map('salesMap', {
+                center: [36.5, 127.8],
+                zoom: 7,
+                zoomControl: false,
+                attributionControl: false,
+                dragging: true,
+                touchZoom: true,
+                scrollWheelZoom: true,
+                doubleClickZoom: true,
+                minZoom: 6,
+                maxZoom: 12
+            });
+
+            // 어두운 테마의 타일 레이어 추가
+            L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+                attribution: '',
+                subdomains: 'abcd',
+                maxZoom: 19
+            }).addTo(salesMap);
+
+            // 전체 보기 버튼 추가
+            const resetControl = L.control({position: 'topright'});
+            resetControl.onAdd = function(map) {
+                const div = L.DomUtil.create('div', 'leaflet-bar leaflet-control leaflet-control-custom');
+                div.innerHTML = '<button onclick="resetMapView()" style="background: rgba(17, 24, 39, 0.9); color: #00d4ff; border: none; padding: 8px; border-radius: 4px; cursor: pointer; font-size: 0.8rem;">🌍 전체</button>';
+                div.style.backgroundColor = 'transparent';
+                div.style.border = 'none';
+                return div;
+            };
+            resetControl.addTo(salesMap);
+
+            updateRegionalMap();
+        }
+
+        // 지역별 매출 데이터로 지도 업데이트 (지역 강조 시스템)
+        let currentRegionLayers = [];
+        
+        function updateRegionalMap() {
+            if (!salesMap || !salesData || salesData.length === 0) return;
+
+            // 기존 레이어 제거
+            currentRegionLayers.forEach(layer => {
+                salesMap.removeLayer(layer);
+            });
+            currentRegionLayers = [];
+
+            // 최근 월 데이터로 지역별 매출 계산 (세부 지역 포함)
+            const recentMonthData = salesData.filter(row => row['기준년월'] === processedData.recentMonth);
+            const regionalSales = {};
+            const detailedRegionalSales = {};
+
+            recentMonthData.forEach(row => {
+                const estimatedResult = estimateRegionFromName(row['거래처명']);
+                
+                if (estimatedResult.region !== '기타') {
+                    // 광역 지역별 매출
+                    if (regionData[estimatedResult.region]) {
+                        regionalSales[estimatedResult.region] = (regionalSales[estimatedResult.region] || 0) + (row['총매출'] || 0);
+                    }
+                    
+                    // 세부 지역별 매출 (세부 지역이 확인된 경우)
+                    if (estimatedResult.detailedRegion && estimatedResult.detailedInfo) {
+                        const detailKey = `${estimatedResult.region}-${estimatedResult.detailedRegion}`;
+                        detailedRegionalSales[detailKey] = {
+                            sales: (detailedRegionalSales[detailKey]?.sales || 0) + (row['총매출'] || 0),
+                            region: estimatedResult.region,
+                            detailedRegion: estimatedResult.detailedRegion,
+                            detailedInfo: estimatedResult.detailedInfo,
+                            accounts: [...(detailedRegionalSales[detailKey]?.accounts || []), row['거래처명']]
+                        };
+                    }
+                }
+            });
+
+            // 최대값 계산 및 정렬
+            const sortedRegions = Object.entries(regionalSales)
+                .sort((a, b) => b[1] - a[1]);
+            
+            // 세부 지역 정렬 (가장 높은 매출의 세부 지역 찾기)
+            const sortedDetailedRegions = Object.entries(detailedRegionalSales)
+                .sort((a, b) => b[1].sales - a[1].sales);
+            
+            if (sortedRegions.length === 0) return;
+
+            const maxSales = sortedRegions[0][1];
+            const topRegion = sortedRegions[0][0];
+
+            // "하남" 지역이 있는지 확인하고 우선 강조
+            const hanamRegion = detailedRegionalSales['경기-하남'];
+            if (hanamRegion) {
+                setTimeout(() => {
+                    highlightHanamRegion(hanamRegion);
+                }, 500);
+            } else if (sortedDetailedRegions.length > 0) {
+                const topDetailedRegion = sortedDetailedRegions[0][1];
+                setTimeout(() => {
+                    highlightTopDetailedRegion(topDetailedRegion);
+                }, 500);
+            } else {
+                setTimeout(() => {
+                    highlightTopRegion(topRegion, regionalSales[topRegion]);
+                }, 500);
+            }
+
+            // 모든 지역에 동일한 스타일로 경계 표시
+            sortedRegions.forEach(([region, sales], index) => {
+                const regionInfo = regionData[region];
+                if (!regionInfo) return;
+
+                // 모든 지역 동일한 색상과 스타일
+                const color = '#00d4ff';
+                const fillOpacity = 0.1;
+                const strokeWeight = 1;
+
+                // 지역 경계 사각형 (실제 경계 근사)
+                const bounds = regionInfo.bounds;
+                const rectangle = L.rectangle(bounds, {
+                    color: color,
+                    fillColor: color,
+                    fillOpacity: fillOpacity,
+                    weight: strokeWeight,
+                    opacity: 0.5,
+                    className: 'region-highlight'
+                }).addTo(salesMap);
+
+                currentRegionLayers.push(rectangle);
+            });
+
+            // 세부 지역 표시는 하남만 유지 (확대 기능만)
+            sortedDetailedRegions.forEach(([detailKey, detailData], index) => {
+                const { detailedInfo, sales } = detailData;
+                const isHanamRegion = detailData.detailedRegion === '하남';
+                
+                // 하남이 아닌 경우에만 간단한 박스 생성
+                if (!isHanamRegion) {
+                    // 세부 지역 경계 (단순한 스타일)
+                    const detailRectangle = L.rectangle(detailedInfo.bounds, {
+                        color: '#7c3aed',
+                        fillColor: '#7c3aed',
+                        fillOpacity: 0.1,
+                        weight: 1,
+                        opacity: 0.5,
+                        className: 'detailed-region-highlight'
+                    }).addTo(salesMap);
+
+                    currentRegionLayers.push(detailRectangle);
+                }
+            });
+        }
+
+        // 하남 지역 전용 강조 (확대만)
+        function highlightHanamRegion(detailData) {
+            const { detailedInfo } = detailData;
+            
+            // 하남 지역으로 확대
+            salesMap.flyToBounds(detailedInfo.bounds, {
+                paddingTopLeft: [8, 8],
+                paddingBottomRight: [8, 8],
+                duration: 2.0,
+                maxZoom: 12
+            });
+        }
+
+        // 최상위 매출 세부 지역 자동 확대 (확대만)
+        function highlightTopDetailedRegion(detailData) {
+            const { detailedInfo } = detailData;
+            
+            // 세부 지역으로 확대
+            salesMap.flyToBounds(detailedInfo.bounds, {
+                paddingTopLeft: [10, 10],
+                paddingBottomRight: [10, 10],
+                duration: 2.0,
+                maxZoom: 12
+            });
+        }
+
+        // 최상위 매출 지역 자동 확대 (확대만)
+        function highlightTopRegion(region, sales) {
+            const regionInfo = regionData[region];
+            if (!regionInfo) return;
+
+            // 부드러운 확대
+            salesMap.flyToBounds(regionInfo.bounds, {
+                paddingTopLeft: [20, 20],
+                paddingBottomRight: [20, 20],
+                duration: 2,
+                maxZoom: 9
+            });
+        }
+
+        // 세부 지역 확대 및 강조
+        function highlightDetailedRegion(detailData) {
+            const { detailedInfo, sales, accounts } = detailData;
+            
+            salesMap.flyToBounds(detailedInfo.bounds, {
+                paddingTopLeft: [10, 10],
+                paddingBottomRight: [10, 10],
+                duration: 1.5,
+                maxZoom: 12
+            });
+
+            const salesInEok = Math.round(sales / 100000000);
+            const uniqueAccounts = [...new Set(accounts)];
+            const popup = L.popup()
+                .setLatLng([detailedInfo.lat, detailedInfo.lng])
+                .setContent(`
+                    <div style="text-align: center; padding: 12px;">
+                        <div style="font-weight: bold; font-size: 1.1rem; color: #7c3aed;">${detailedInfo.name}</div>
+                        <div style="margin: 8px 0; color: #ef4444; font-size: 1rem;">매출: ${salesInEok.toLocaleString()}억원</div>
+                        <div style="margin: 6px 0; color: #ffffff; font-size: 0.9rem;">거래처: ${uniqueAccounts.length}개</div>
+                        <div style="margin: 8px 0; font-size: 0.8rem; color: #9ca3af;">
+                            ${uniqueAccounts.slice(0, 2).join(', ')}${uniqueAccounts.length > 2 ? ` 외 ${uniqueAccounts.length - 2}개` : ''}
+                        </div>
+                        <button onclick="resetMapView()" style="
+                            background: #7c3aed; 
+                            color: white; 
+                            border: none; 
+                            padding: 6px 12px; 
+                            border-radius: 6px; 
+                            font-size: 0.8rem; 
+                            cursor: pointer;
+                            margin-top: 8px;
+                        ">전체 지도 보기</button>
+                    </div>
+                `)
+                .openOn(salesMap);
+        }
+
+        // 특정 지역 확대 및 강조
+        function highlightRegion(region, sales) {
+            const regionInfo = regionData[region];
+            if (!regionInfo) return;
+
+            salesMap.flyToBounds(regionInfo.bounds, {
+                paddingTopLeft: [20, 20],
+                paddingBottomRight: [20, 20],
+                duration: 1.5,
+                maxZoom: 10
+            });
+
+            const salesInEok = Math.round(sales / 100000000);
+            const popup = L.popup()
+                .setLatLng([regionInfo.lat, regionInfo.lng])
+                .setContent(`
+                    <div style="text-align: center; padding: 10px;">
+                        <div style="font-weight: bold; font-size: 1.1rem; color: #00d4ff;">${regionInfo.name}</div>
+                        <div style="margin: 8px 0; color: #ef4444; font-size: 1rem;">매출: ${salesInEok.toLocaleString()}억원</div>
+                        <button onclick="resetMapView()" style="
+                            background: #7c3aed; 
+                            color: white; 
+                            border: none; 
+                            padding: 6px 12px; 
+                            border-radius: 6px; 
+                            font-size: 0.8rem; 
+                            cursor: pointer;
+                            margin-top: 8px;
+                        ">전체 지도 보기</button>
+                    </div>
+                `)
+                .openOn(salesMap);
+        }
+
+        // 지도 전체 보기 리셋
+        function resetMapView() {
+            salesMap.flyTo([36.5, 127.8], 7, {
+                duration: 1.5
+            });
+            salesMap.closePopup();
+        }
+
+        // 라이브러리 로드
+        function loadLibraries() {
+            const checkLibraries = () => {
+                if (typeof Chart !== 'undefined' && typeof Papa !== 'undefined' && typeof L !== 'undefined') {
+                    librariesLoaded = true;
+                    showStatus('시스템이 준비되었습니다.', 'success');
+                    initializeMap(); // 지도 초기화
+                } else {
+                    setTimeout(checkLibraries, 100);
+                }
+            };
+            checkLibraries();
+        }
+
+        // 파일 처리 설정
+        function setupFileHandling() {
+            const fileInput = document.getElementById('fileInput');
+            const fileInputArea = document.getElementById('fileInputArea');
+
+            fileInput.addEventListener('change', function(e) {
+                if (e.target.files.length > 0) {
+                    handleFileUpload(e.target.files[0]);
+                }
+            });
+
+            // 드래그 앤 드롭 처리
+            fileInputArea.addEventListener('dragover', function(e) {
+                e.preventDefault();
+                fileInputArea.classList.add('dragover');
+            });
+
+            fileInputArea.addEventListener('dragleave', function(e) {
+                e.preventDefault();
+                fileInputArea.classList.remove('dragover');
+            });
+
+            fileInputArea.addEventListener('drop', function(e) {
+                e.preventDefault();
+                fileInputArea.classList.remove('dragover');
+                const files = e.dataTransfer.files;
+                if (files.length > 0) {
+                    handleFileUpload(files[0]);
+                }
+            });
+        }
+
+        // 상태 메시지 표시
+        function showStatus(message, type = 'info') {
+            const statusElement = document.getElementById('statusMessage');
+            statusElement.textContent = message;
+            statusElement.className = `status-message status-${type}`;
+            statusElement.classList.remove('hidden');
+        }
+
+        // 진행률 업데이트
+        function updateProgress(percentage) {
+            const progressFill = document.getElementById('progressFill');
+            progressFill.style.width = `${percentage}%`;
+        }
+
+        // 로딩 오버레이 표시
+        function showLoading(show) {
+            const loadingOverlay = document.getElementById('loadingOverlay');
+            loadingOverlay.style.display = show ? 'flex' : 'none';
+        }
+
+        // 헬퍼 함수들
+        const groupBy = (array, key) => {
+            return array.reduce((result, item) => {
+                const group = typeof key === 'function' ? key(item) : item[key];
+                (result[group] = result[group] || []).push(item);
+                return result;
+            }, {});
+        };
+
+        const sumBy = (array, key) => {
+            return array.reduce((sum, item) => sum + (typeof key === 'function' ? key(item) : item[key]), 0);
+        };
+
+        const uniqBy = (array, key) => {
+            const seen = new Set();
+            return array.filter(item => {
+                const val = typeof key === 'function' ? key(item) : item[key];
+                if (seen.has(val)) {
+                    return false;
+                }
+                seen.add(val);
+                return true;
+            });
+        };
+
+        // 파일 업로드 처리
+        function handleFileUpload(file) {
+            if (!ensureLibrariesLoaded()) return;
+
+            showStatus('파일을 분석하고 있습니다...', 'info');
+            showLoading(true);
+            updateProgress(20);
+
+            Papa.parse(file, {
+                header: true,
+                skipEmptyLines: true,
+                dynamicTyping: true,
+                complete: function(results) {
+                    try {
+                        if (results.errors.length > 0) {
+                            console.warn('CSV 파싱 경고:', results.errors);
+                        }
+
+                        if (!results.data || results.data.length === 0) {
+                            showStatus('파일에 유효한 데이터가 없습니다.', 'error');
+                            showLoading(false);
+                            return;
+                        }
+
+                        salesData = results.data.filter(row => {
+                            return Object.values(row).some(value => 
+                                value !== null && value !== undefined && value !== ''
+                            );
+                        });
+
+                        if (salesData.length === 0) {
+                            showStatus('파일에서 유효한 데이터를 찾을 수 없습니다.', 'error');
+                            showLoading(false);
+                            return;
+                        }
+
+                        preprocessData();
+                        showStatus(`데이터 로드 완료: ${salesData.length.toLocaleString()}개 레코드`, 'success');
+                        enableAnalysisButtons();
+                        updateProgress(100);
+                        showLoading(false);
+                        
+                        // 자동으로 기본 분석 실행
+                        setTimeout(() => {
+                            performBasicAnalysis();
+                        }, 500);
+                    } catch (error) {
+                        console.error('파일 처리 중 오류:', error);
+                        showStatus('파일 처리 중 오류가 발생했습니다: ' + error.message, 'error');
+                        showLoading(false);
+                    }
+                },
+                error: function(error) {
+                    console.error('CSV 파싱 오류:', error);
+                    showStatus('CSV 파일 파싱 중 오류가 발생했습니다.', 'error');
+                    showLoading(false);
+                }
+            });
+        }
+
+        // 데모 데이터 생성 (월별 집계 구조로 개선)
+        function generateDemoData() {
+            if (!ensureLibrariesLoaded()) return;
+
+            showStatus('데모 데이터를 생성하고 있습니다...', 'info');
+            showLoading(true);
+            updateProgress(30);
+
+            try {
+                const accounts = 50;
+                const products = 20;
+                const months = 24;
+
+                const accountCodes = Array.from({length: accounts}, (_, i) => `A${String(i+1).padStart(3, '0')}`);
+                const regions = ['서울', '경기', '인천', '부산', '대구', '광주', '대전', '울산', '강원', '충북', '충남', '전북', '전남', '경북', '경남', '제주'];
+                const regionSubAreas = {
+                    '서울': ['강남', '강북', '송파', '마포', '용산', '종로', '서초', '관악', '영등포'],
+                    '경기': ['수원', '성남', '고양', '용인', '부천', '안산', '안양', '화성', '평택'],
+                    '인천': ['부평', '남동', '계양', '서구', '연수'],
+                    '부산': ['해운대', '사상', '부산진', '동래', '사하'],
+                    '대구': ['달서', '수성', '북구', '중구'],
+                    '광주': ['서구', '남구', '북구', '광산'],
+                    '대전': ['유성', '서구', '중구', '동구'],
+                    '울산': ['남구', '중구', '동구', '북구'],
+                    '강원': ['춘천', '원주', '강릉', '속초'],
+                    '충북': ['청주', '충주', '제천'],
+                    '충남': ['천안', '아산', '서산', '공주'],
+                    '전북': ['전주', '군산', '익산'],
+                    '전남': ['목포', '여수', '순천'],
+                    '경북': ['포항', '경주', '구미', '안동'],
+                    '경남': ['창원', '진주', '김해', '거제'],
+                    '제주': ['제주시', '서귀포']
+                };
+                
+                // 지역 정보가 포함된 거래처명 생성
+                const accountNames = Array.from({length: accounts}, (_, i) => {
+                    const region = regions[i % regions.length];
+                    const subAreas = regionSubAreas[region];
+                    const subArea = subAreas[Math.floor(Math.random() * subAreas.length)];
+                    return `${subArea}${Math.random() > 0.5 ? '상사' : '기업'}${i+1}`;
+                });
+                const managers = ['김담당', '이담당', '박담당', '최담당', '정담당'];
+                const productCodes = Array.from({length: products}, (_, i) => `P${String(i+1).padStart(3, '0')}`);
+                const productNames = Array.from({length: products}, (_, i) => `품목군${i+1}`);
+
+                salesData = [];
+
+                const now = new Date();
+                const startDate = new Date(now.getFullYear(), now.getMonth() - months, 1);
+                const monthsList = [];
+                
+                for (let i = 0; i < months; i++) {
+                    const date = new Date(startDate.getFullYear(), startDate.getMonth() + i, 1);
+                    monthsList.push(date.getFullYear() * 100 + (date.getMonth() + 1));
+                }
+
+                // 거래처별 특성 미리 정의
+                const accountProfiles = [];
+                for (let i = 0; i < accounts; i++) {
+                    const customerType = Math.random();
+                    accountProfiles.push({
+                        accountCode: accountCodes[i],
+                        accountName: accountNames[i],
+                        region: regions[Math.floor(Math.random() * regions.length)],
+                        manager: managers[Math.floor(Math.random() * managers.length)],
+                        // 거래처별 특성
+                        productCount: customerType > 0.8 ? Math.floor(Math.random() * 8) + 5 : Math.floor(Math.random() * 5) + 1,
+                        monthlyActivityRate: customerType > 0.7 ? 0.8 : customerType > 0.4 ? 0.6 : 0.3, // 월별 활동 확률
+                        salesTier: customerType > 0.8 ? 'high' : customerType > 0.5 ? 'medium' : 'low', // 매출 등급
+                        preferredProducts: [] // 선호 품목들
+                    });
+                }
+
+                // 각 거래처의 선호 품목 할당
+                accountProfiles.forEach(profile => {
+                    const availableProducts = Array.from({length: products}, (_, i) => i);
+                    for (let j = 0; j < profile.productCount; j++) {
+                        if (availableProducts.length === 0) break;
+                        const randomIndex = Math.floor(Math.random() * availableProducts.length);
+                        profile.preferredProducts.push(availableProducts.splice(randomIndex, 1)[0]);
+                    }
+                });
+
+                // 월별 집계 데이터 생성 (거래처 + 품목 + 월 단위)
+                let recordCount = 0;
+                accountProfiles.forEach((profile, accountIndex) => {
+                    updateProgress(30 + (accountIndex / accounts) * 50);
+
+                    monthsList.forEach(month => {
+                        // 해당 월에 거래가 있는지 확률적으로 결정
+                        if (Math.random() < profile.monthlyActivityRate) {
+                            
+                            // 이 월에 구매할 품목들 결정 (선호 품목 중 일부)
+                            const monthlyProducts = profile.preferredProducts.filter(() => Math.random() < 0.7);
+                            
+                            monthlyProducts.forEach(productIdx => {
+                                const productCode = productCodes[productIdx];
+                                const productName = productNames[productIdx];
+
+                                // 품목별 기본 단가 설정 (품목군마다 다른 가격대)
+                                const baseUnitPrice = 20000 + (productIdx * 2000) + Math.floor(Math.random() * 10000);
+                                
+                                // 거래처 등급별 수량 및 매출 배수
+                                let qtyMultiplier, salesMultiplier;
+                                switch(profile.salesTier) {
+                                    case 'high':
+                                        qtyMultiplier = 2.5 + Math.random() * 2;
+                                        salesMultiplier = 2.8 + Math.random() * 1.2;
+                                        break;
+                                    case 'medium':
+                                        qtyMultiplier = 1.2 + Math.random() * 1;
+                                        salesMultiplier = 1.3 + Math.random() * 0.7;
+                                        break;
+                                    default: // low
+                                        qtyMultiplier = 0.5 + Math.random() * 0.8;
+                                        salesMultiplier = 0.6 + Math.random() * 0.6;
+                                }
+
+                                // 월별 집계된 수량 및 매출 계산
+                                const baseMonthlyQty = Math.floor((50 + Math.random() * 150) * qtyMultiplier);
+                                const inQtyMr = Math.floor(baseMonthlyQty * (0.4 + Math.random() * 0.3));
+                                const outQtyMr = baseMonthlyQty - inQtyMr;
+                                const totalQty = inQtyMr + outQtyMr;
+
+                                // 실제 단가는 기본 단가에 변동 적용
+                                const actualUnitPrice = Math.floor(baseUnitPrice * salesMultiplier);
+                                
+                                const inSales = Math.floor(inQtyMr * actualUnitPrice);
+                                const outSales = Math.floor(outQtyMr * actualUnitPrice);
+                                const totalSales = inSales + outSales;
+
+                                // 할인율 적용 (Net 매출)
+                                const inDiscount = 0.03 + Math.random() * 0.04; // 3-7%
+                                const outDiscount = 0.05 + Math.random() * 0.05; // 5-10%
+
+                                if (totalQty > 0 && totalSales > 0) {
+                                    salesData.push({
+                                        '기준년월': month,
+                                        '거래처코드': profile.accountCode,
+                                        '거래처명': profile.accountName,
+                                        '권역': profile.region,
+                                        '담당자': profile.manager,
+                                        '품목군코드': productCode,
+                                        '품목군': productName,
+                                        '원내수량(MR)': inQtyMr,
+                                        '원내수량(기획)': 0,
+                                        '원내매출': inSales,
+                                        '원내매출(Net)': Math.floor(inSales * (1 - inDiscount)),
+                                        '원내할인율': inDiscount,
+                                        '원외수량(MR)': outQtyMr,
+                                        '원외수량(기획)': 0,
+                                        '원외매출': outSales,
+                                        '원외매출(Net)': Math.floor(outSales * (1 - outDiscount)),
+                                        '원외할인율': outDiscount,
+                                        '총수량': totalQty,
+                                        '총매출': totalSales
+                                    });
+                                    recordCount++;
+                                }
+                            });
+                        }
+                    });
+                });
+
+                updateProgress(80);
+                preprocessData();
+                showStatus(`월별 집계 데모 데이터 생성 완료: ${salesData.length.toLocaleString()}개 레코드 (${accounts}개 거래처, ${products}개 품목군, ${months}개월)`, 'success');
+                enableAnalysisButtons();
+                updateProgress(100);
+                showLoading(false);
+                
+                // 자동으로 기본 분석 실행
+                setTimeout(() => {
+                    performBasicAnalysis();
+                }, 500);
+            } catch (error) {
+                console.error('데모 데이터 생성 중 오류:', error);
+                showStatus('데모 데이터 생성 중 오류가 발생했습니다.', 'error');
+                showLoading(false);
+            }
+        }
+
+        // 데이터 전처리
+        function preprocessData() {
+            salesData.forEach(row => {
+                const yearMonth = String(row['기준년월']);
+                const year = parseInt(yearMonth.substring(0, 4));
+                const month = parseInt(yearMonth.substring(4, 6));
+                row['기준년월_dt'] = new Date(year, month - 1, 1);
+            });
+
+            const numericColumns = ['원내수량(MR)', '원내수량(기획)', '원내매출', '원내매출(Net)', 
+                                   '원외수량(MR)', '원외수량(기획)', '원외매출', '원외매출(Net)', 
+                                   '원내할인율', '원외할인율', '총수량', '총매출'];
+            
+            salesData.forEach(row => {
+                numericColumns.forEach(col => {
+                    if (row[col] === null || row[col] === undefined || isNaN(row[col])) {
+                        row[col] = 0;
+                    }
+                });
+            });
+
+            // 최근 월 데이터 계산
+            const monthlyData = groupBy(salesData, '기준년월');
+            const sortedMonths = Object.keys(monthlyData).map(Number).sort((a, b) => b - a);
+            const recentMonth = sortedMonths[0];
+            const recentMonthData = monthlyData[recentMonth] || [];
+            const recentMonthSales = sumBy(recentMonthData, '총매출');
+
+            processedData = {
+                totalRecords: salesData.length,
+                dateRange: {
+                    start: salesData.reduce((min, row) => row['기준년월_dt'] < min ? row['기준년월_dt'] : min, salesData[0]['기준년월_dt']),
+                    end: salesData.reduce((max, row) => row['기준년월_dt'] > max ? row['기준년월_dt'] : max, salesData[0]['기준년월_dt'])
+                },
+                uniqueAccounts: uniqBy(salesData, '거래처코드').length,
+                uniqueProducts: uniqBy(salesData, '품목군').length,
+                totalSales: sumBy(salesData, '총매출'), // 전체 기간 총매출 (참고용)
+                recentMonth: recentMonth,
+                recentMonthSales: recentMonthSales, // 최근 월 매출
+                recentMonthAccounts: uniqBy(recentMonthData, '거래처코드').length, // 최근 월 활성 거래처
+                recentMonthProducts: uniqBy(recentMonthData, '품목군').length // 최근 월 거래 품목
+            };
+
+            // 지도 업데이트
+            setTimeout(() => {
+                if (salesMap) {
+                    updateRegionalMap();
+                }
+            }, 100);
+        }
+
+        // 분석 버튼 활성화
+        function enableAnalysisButtons() {
+            document.getElementById('basicAnalysisBtn').disabled = false;
+            document.getElementById('segmentationBtn').disabled = false;
+            document.getElementById('recommendationBtn').disabled = false;
+            document.getElementById('exportBtn').disabled = false;
+        }
+
+        // 기본 분석 수행
+        function performBasicAnalysis() {
+            if (!ensureLibrariesLoaded()) return;
+            
+            showStatus('기본 분석을 수행하고 있습니다...', 'info');
+            showLoading(true);
+            updateProgress(0);
+
+            try {
+                // 월별 매출 추이 (개선된 월별 집계 분석)
+                const monthlyData = groupBy(salesData, row => row['기준년월']);
+                const monthlySales = Object.entries(monthlyData)
+                    .map(([month, data]) => {
+                        const totalSales = sumBy(data, '총매출');
+                        const recordCount = data.length; // 월별 거래 레코드 수 (거래처-품목 조합 수)
+                        const uniqueAccounts = uniqBy(data, '거래처코드').length;
+                        const uniqueProducts = uniqBy(data, '품목군').length;
+                        return [month, totalSales, recordCount, uniqueAccounts, uniqueProducts];
+                    })
+                    .sort((a, b) => a[0] - b[0]);
+
+                updateProgress(25);
+
+                // 품목별 분석 (최근 월 기준)
+                const recentMonthData = salesData.filter(row => row['기준년월'] === processedData.recentMonth);
+                const productData = groupBy(recentMonthData, '품목군');
+                const productAnalysis = Object.entries(productData)
+                    .map(([product, data]) => ({
+                        product,
+                        recentMonthSales: sumBy(data, '총매출'), // 최근 월 매출
+                        recentMonthQty: sumBy(data, '총수량'), // 최근 월 수량
+                        accountCount: uniqBy(data, '거래처코드').length, // 최근 월 거래처 수
+                        avgPrice: sumBy(data, '총매출') / sumBy(data, '총수량') // 최근 월 평균 단가
+                    }))
+                    .sort((a, b) => b.recentMonthSales - a.recentMonthSales);
+
+                updateProgress(50);
+
+                // 권역별 분석
+                const regionData = groupBy(salesData, '권역');
+                const regionalAnalysis = Object.entries(regionData)
+                    .map(([region, data]) => {
+                        const accountCount = uniqBy(data, '거래처코드').length;
+                        const managerCount = uniqBy(data, '담당자').length;
+                        const totalSales = sumBy(data, '총매출');
+                        return {
+                            region,
+                            totalSales,
+                            accountCount,
+                            managerCount,
+                            salesPerAccount: totalSales / accountCount,
+                            salesPerManager: totalSales / managerCount
+                        };
+                    })
+                    .sort((a, b) => b.totalSales - a.totalSales);
+
+                updateProgress(75);
+
+                // 담당자별 분석 (최근 월 기준)
+                const managerData = groupBy(recentMonthData, '담당자');
+                const managerAnalysis = Object.entries(managerData)
+                    .map(([manager, data]) => {
+                        const accountCount = uniqBy(data, '거래처코드').length;
+                        const productCount = uniqBy(data, '품목군').length;
+                        const recentMonthSales = sumBy(data, '총매출');
+                        return {
+                            manager,
+                            recentMonthSales,
+                            accountCount,
+                            productCount
+                        };
+                    })
+                    .sort((a, b) => b.recentMonthSales - a.recentMonthSales);
+
+                analysisResults.basic = {
+                    monthlySales,
+                    productAnalysis,
+                    regionalAnalysis,
+                    managerAnalysis
+                };
+
+                updateProgress(100);
+                displayBasicAnalysis();
+                showStatus('기본 분석이 완료되었습니다.', 'success');
+                showLoading(false);
+            } catch (error) {
+                console.error('기본 분석 중 오류:', error);
+                showStatus('기본 분석 중 오류가 발생했습니다: ' + error.message, 'error');
+                showLoading(false);
+            }
+        }
+
+        // 기본 분석 결과 표시
+        function displayBasicAnalysis() {
+            const analysisGrid = document.getElementById('analysisGrid');
+            analysisGrid.innerHTML = '';
+
+            // 기본 통계 카드 + 월별 매출 차트
+            const avgMonthlySales = processedData.totalSales / analysisResults.basic.monthlySales.length;
+            const avgMonthlyRecords = processedData.totalRecords / analysisResults.basic.monthlySales.length;
+            const recentMonthFormatted = processedData.recentMonth ? `${Math.floor(processedData.recentMonth / 100)}년 ${processedData.recentMonth % 100}월` : '';
+            
+            const basicStatsCard = document.createElement('div');
+            basicStatsCard.className = 'analysis-card';
+            basicStatsCard.innerHTML = `
+                <h3>📊 핵심 지표 (${recentMonthFormatted} 기준)</h3>
+                <div class="stats-grid">
+                    <div class="stat-item">
+                        <div class="stat-value">${processedData.recentMonthAccounts.toLocaleString()}</div>
+                        <div class="stat-label">최근월 활성 거래처</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value">${processedData.recentMonthProducts.toLocaleString()}</div>
+                        <div class="stat-label">최근월 거래 품목군</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value">${Math.round(processedData.recentMonthSales / 100000000).toLocaleString()}</div>
+                        <div class="stat-label">최근월 매출 (억원)</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value">${processedData.totalRecords.toLocaleString()}</div>
+                        <div class="stat-label">전체 거래 집계 수</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value">${Math.round(avgMonthlySales / 100000000 * 10) / 10}</div>
+                        <div class="stat-label">월평균 매출 (억원)</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value">${processedData.uniqueAccounts.toLocaleString()}</div>
+                        <div class="stat-label">전체 거래처 수</div>
+                    </div>
+                </div>
+                
+                <hr style="margin: 30px 0; border: none; border-top: 1px solid rgba(75, 85, 99, 0.3);">
+                
+                <h4 style="margin-bottom: 15px; color: #ffffff; font-size: 1.1rem;">📈 월별 매출 및 거래 활동 추이</h4>
+                <p style="margin-bottom: 15px; color: #9ca3af; font-size: 0.9rem;">
+                    월별 집계된 매출액과 거래처-품목 조합 수의 변화를 보여줍니다.
+                </p>
+                <div class="chart-container">
+                    <canvas id="monthlySalesChart"></canvas>
+                </div>
+            `;
+            analysisGrid.appendChild(basicStatsCard);
+
+
+
+            // 상위 품목 테이블 (최근 월 기준)
+            const topProductsCard = document.createElement('div');
+            topProductsCard.className = 'analysis-card';
+            topProductsCard.innerHTML = `
+                <h3>🏆 상위 품목 성과 (${recentMonthFormatted})</h3>
+                <p style="margin-bottom: 15px; color: #9ca3af; font-size: 0.9rem;">
+                    품목명을 클릭하면 해당 품목을 구매하는 거래처 목록을 볼 수 있습니다.
+                </p>
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>순위</th>
+                                <th>품목군</th>
+                                <th>최근월 매출액</th>
+                                <th>거래처 수</th>
+                                <th>평균단가</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${analysisResults.basic.productAnalysis.slice(0, 10).map((item, index) => `
+                                <tr>
+                                    <td><strong>${index + 1}</strong></td>
+                                    <td><span class="clickable-product" onclick="showProductCustomers('${item.product}')" style="color: #00d4ff; cursor: pointer; text-decoration: underline;">${item.product}</span></td>
+                                    <td><strong>${Math.round(item.recentMonthSales / 10000).toLocaleString()}</strong>만원</td>
+                                    <td>${item.accountCount}개</td>
+                                    <td>${Math.round(item.avgPrice).toLocaleString()}원</td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                </div>
+            `;
+            analysisGrid.appendChild(topProductsCard);
+
+
+
+            // 담당자별 성과 (최근월 기준)
+            const managerRecentMonthFormatted = processedData.recentMonth ? `${Math.floor(processedData.recentMonth / 100)}년 ${processedData.recentMonth % 100}월` : '';
+            const managerCard = document.createElement('div');
+            managerCard.className = 'analysis-card';
+            managerCard.innerHTML = `
+                <h3>👤 담당자 실적 (${managerRecentMonthFormatted})</h3>
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>담당자</th>
+                                <th>최근월 매출</th>
+                                <th>거래처 수</th>
+                                <th>취급 품목</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${analysisResults.basic.managerAnalysis.map(item => `
+                                <tr>
+                                    <td><strong>${item.manager}</strong></td>
+                                    <td>${Math.round(item.recentMonthSales / 10000).toLocaleString()}만원</td>
+                                    <td>${item.accountCount}개</td>
+                                    <td>${item.productCount}개</td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                </div>
+            `;
+            analysisGrid.appendChild(managerCard);
+
+            // 차트 생성
+            setTimeout(() => {
+                createMonthlySalesChart();
+            }, 100);
+        }
+
+        // 품목별 월별 매출 차트 생성
+        function createProductMonthlySalesChart(monthlyProductSales, productName) {
+            const ctx = document.getElementById('productMonthlySalesChart').getContext('2d');
+            
+            new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: monthlyProductSales.map(item => {
+                        const yearMonth = item[0];
+                        const year = yearMonth.toString().substring(0, 4);
+                        const month = yearMonth.toString().substring(4, 6);
+                        return `${year}-${month}`;
+                    }),
+                    datasets: [{
+                        label: '월별 매출 (억원)',
+                        data: monthlyProductSales.map(item => item[1]),
+                        borderColor: '#ff6b35',
+                        backgroundColor: 'rgba(255, 107, 53, 0.1)',
+                        tension: 0.4,
+                        fill: true,
+                        pointBackgroundColor: '#ff6b35',
+                        pointBorderColor: '#ffffff',
+                        pointBorderWidth: 2,
+                        pointRadius: 5,
+                        yAxisID: 'y'
+                    }, {
+                        label: '월별 거래집계 수',
+                        data: monthlyProductSales.map(item => item[2]), // recordCount
+                        borderColor: '#10b981',
+                        backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                        tension: 0.4,
+                        fill: false,
+                        pointBackgroundColor: '#10b981',
+                        pointBorderColor: '#ffffff',
+                        pointBorderWidth: 2,
+                        pointRadius: 4,
+                        yAxisID: 'y1'
+                    }, {
+                        label: '활성 거래처 수',
+                        data: monthlyProductSales.map(item => item[3]), // uniqueAccounts
+                        borderColor: '#7c3aed',
+                        backgroundColor: 'rgba(124, 58, 237, 0.1)',
+                        tension: 0.4,
+                        fill: false,
+                        pointBackgroundColor: '#7c3aed',
+                        pointBorderColor: '#ffffff',
+                        pointBorderWidth: 2,
+                        pointRadius: 4,
+                        yAxisID: 'y1'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    interaction: {
+                        mode: 'index',
+                        intersect: false,
+                    },
+                    plugins: {
+                        legend: {
+                            display: true,
+                            position: 'top',
+                            labels: {
+                                color: '#d1d5db',
+                                usePointStyle: true,
+                                padding: 20
+                            }
+                        },
+                        tooltip: {
+                            backgroundColor: 'rgba(17, 24, 39, 0.95)',
+                            titleColor: '#ffffff',
+                            bodyColor: '#d1d5db',
+                            borderColor: 'rgba(75, 85, 99, 0.5)',
+                            borderWidth: 1,
+                            callbacks: {
+                                afterBody: function(context) {
+                                    const dataIndex = context[0].dataIndex;
+                                    const monthData = monthlyProductSales[dataIndex];
+                                    return [
+                                        `총 수량: ${monthData[4].toLocaleString()}개`
+                                    ];
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            grid: {
+                                color: 'rgba(75, 85, 99, 0.2)',
+                                borderColor: 'rgba(75, 85, 99, 0.2)'
+                            },
+                            ticks: {
+                                color: '#9ca3af'
+                            }
+                        },
+                        y: {
+                            type: 'linear',
+                            display: true,
+                            position: 'left',
+                            beginAtZero: true,
+                            grid: {
+                                color: 'rgba(75, 85, 99, 0.2)',
+                                borderColor: 'rgba(75, 85, 99, 0.2)'
+                            },
+                            ticks: {
+                                color: '#9ca3af',
+                                callback: function(value) {
+                                    return Math.round(value / 100000000 * 10) / 10 + '억원';
+                                }
+                            },
+                            title: {
+                                display: true,
+                                text: '매출액 (억원)',
+                                color: '#ff6b35'
+                            }
+                        },
+                        y1: {
+                            type: 'linear',
+                            display: true,
+                            position: 'right',
+                            beginAtZero: true,
+                            grid: {
+                                drawOnChartArea: false,
+                            },
+                            ticks: {
+                                color: '#9ca3af'
+                            },
+                            title: {
+                                display: true,
+                                text: '거래집계/거래처 수',
+                                color: '#10b981'
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // 월별 매출 차트 생성 (개선된 월별 집계 정보 포함)
+        function createMonthlySalesChart() {
+            const ctx = document.getElementById('monthlySalesChart').getContext('2d');
+            const data = analysisResults.basic.monthlySales;
+            
+            new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: data.map(item => {
+                        const yearMonth = item[0];
+                        const year = yearMonth.toString().substring(0, 4);
+                        const month = yearMonth.toString().substring(4, 6);
+                        return `${year}-${month}`;
+                    }),
+                    datasets: [{
+                        label: '월별 매출 (억원)',
+                        data: data.map(item => item[1]),
+                        borderColor: '#00d4ff',
+                        backgroundColor: 'rgba(0, 212, 255, 0.1)',
+                        tension: 0.4,
+                        fill: true,
+                        pointBackgroundColor: '#00d4ff',
+                        pointBorderColor: '#ffffff',
+                        pointBorderWidth: 2,
+                        pointRadius: 5,
+                        yAxisID: 'y'
+                    }, {
+                        label: '월별 거래집계 수',
+                        data: data.map(item => item[2]), // recordCount
+                        borderColor: '#7c3aed',
+                        backgroundColor: 'rgba(124, 58, 237, 0.1)',
+                        tension: 0.4,
+                        fill: false,
+                        pointBackgroundColor: '#7c3aed',
+                        pointBorderColor: '#ffffff',
+                        pointBorderWidth: 2,
+                        pointRadius: 4,
+                        yAxisID: 'y1'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    interaction: {
+                        mode: 'index',
+                        intersect: false,
+                    },
+                    plugins: {
+                        legend: {
+                            display: true,
+                            position: 'top',
+                            labels: {
+                                color: '#d1d5db',
+                                usePointStyle: true,
+                                padding: 20
+                            }
+                        },
+                        tooltip: {
+                            backgroundColor: 'rgba(17, 24, 39, 0.95)',
+                            titleColor: '#ffffff',
+                            bodyColor: '#d1d5db',
+                            borderColor: 'rgba(75, 85, 99, 0.5)',
+                            borderWidth: 1,
+                            callbacks: {
+                                afterBody: function(context) {
+                                    const dataIndex = context[0].dataIndex;
+                                    const monthData = data[dataIndex];
+                                    return [
+                                        `활성 거래처: ${monthData[3]}개`,
+                                        `거래 품목군: ${monthData[4]}개`
+                                    ];
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            grid: {
+                                color: 'rgba(75, 85, 99, 0.2)',
+                                borderColor: 'rgba(75, 85, 99, 0.2)'
+                            },
+                            ticks: {
+                                color: '#9ca3af'
+                            }
+                        },
+                        y: {
+                            type: 'linear',
+                            display: true,
+                            position: 'left',
+                            beginAtZero: true,
+                            grid: {
+                                color: 'rgba(75, 85, 99, 0.2)',
+                                borderColor: 'rgba(75, 85, 99, 0.2)'
+                            },
+                            ticks: {
+                                color: '#9ca3af',
+                                callback: function(value) {
+                                    return Math.round(value / 100000000 * 10) / 10 + '억원';
+                                }
+                            },
+                            title: {
+                                display: true,
+                                text: '매출액 (억원)',
+                                color: '#00d4ff'
+                            }
+                        },
+                        y1: {
+                            type: 'linear',
+                            display: true,
+                            position: 'right',
+                            beginAtZero: true,
+                            grid: {
+                                drawOnChartArea: false,
+                            },
+                            ticks: {
+                                color: '#9ca3af'
+                            },
+                            title: {
+                                display: true,
+                                text: '거래집계 수',
+                                color: '#7c3aed'
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+
+
+        // BCG Matrix 세분화 기준 설정
+        const bcgMatrixCriteria = {
+            star: {
+                minRecentSales: 50000000,    // 5천만원
+                minGrowth3Month: 0           // 3개월 대비 성장 양수
+            },
+            cashCow: {
+                minRecentSales: 20000000,    // 2천만원
+                minGrowthYearAgo: 0,         // 작년 동월 대비 성장 양수
+                minGrowth3Month: -5000000    // 3개월 대비 안정적(-500만원 이상)
+            },
+            questionMark: {
+                growthRate3Month: 0.2,       // 3개월 대비 20% 성장
+                growthRateYearAgo: 0.2       // 작년 동월 대비 20% 성장
+            },
+            dog: {
+                maxRecentSales: 5000000,     // 500만원 미만
+                maxGrowth3Month: -10000000,  // 3개월 대비 -1천만원 이하
+                maxGrowthYearAgo: -5000000   // 작년 동월 대비 -500만원 이하
+            }
+        };
+
+        // 기본 매출액 기준 세분화 함수
+        function applySalesBasedSegmentation(customerMetrics) {
+            customerMetrics.forEach(customer => {
+                const recentSales = customer.recentMonthSales;
+                
+                if (recentSales >= 10000000) {
+                    customer.salesSegment = 'premium';
+                    customer.salesSegmentName = '1,000만원 이상';
+                } else if (recentSales >= 5000000) {
+                    customer.salesSegment = 'high';
+                    customer.salesSegmentName = '500~1,000만원';
+                } else if (recentSales >= 1000000) {
+                    customer.salesSegment = 'medium';
+                    customer.salesSegmentName = '100~500만원';
+                } else {
+                    customer.salesSegment = 'low';
+                    customer.salesSegmentName = '100만원 미만';
+                }
+            });
+        }
+
+        // BCG Matrix 세분화 로직 함수
+        function applyBCGSegmentation(customerMetrics) {
+            customerMetrics.forEach(customer => {
+                const recentSales = customer.recentMonthSales;
+                const growth3Month = customer.growthVs3Month;
+                const growthYearAgo = customer.growthVsYearAgo;
+                
+                // Star (높은 성장, 높은 매출)
+                if (recentSales >= bcgMatrixCriteria.star.minRecentSales && 
+                    growth3Month >= bcgMatrixCriteria.star.minGrowth3Month) {
+                    customer.bcgSegment = 'star';
+                    customer.bcgSegmentName = 'Star (스타)';
+                }
+                // Cash Cow (안정적 성장, 높은 매출)
+                else if (recentSales >= bcgMatrixCriteria.cashCow.minRecentSales && 
+                         growthYearAgo >= bcgMatrixCriteria.cashCow.minGrowthYearAgo && 
+                         growth3Month >= bcgMatrixCriteria.cashCow.minGrowth3Month) {
+                    customer.bcgSegment = 'cash-cow';
+                    customer.bcgSegmentName = 'Cash Cow (금고)';
+                }
+                // Question Mark (높은 성장 잠재력, 낮은 현재 매출)
+                else if ((growth3Month > recentSales * bcgMatrixCriteria.questionMark.growthRate3Month) || 
+                         (growthYearAgo > recentSales * bcgMatrixCriteria.questionMark.growthRateYearAgo)) {
+                    customer.bcgSegment = 'question-mark';
+                    customer.bcgSegmentName = 'Question Mark (물음표)';
+                }
+                // Dog (낮은 성장, 낮은 매출)
+                else if (recentSales < bcgMatrixCriteria.dog.maxRecentSales || 
+                         (growth3Month < bcgMatrixCriteria.dog.maxGrowth3Month && 
+                          growthYearAgo < bcgMatrixCriteria.dog.maxGrowthYearAgo)) {
+                    customer.bcgSegment = 'dog';
+                    customer.bcgSegmentName = 'Dog (개)';
+                }
+                // 기본 (분류되지 않은 고객)
+                else {
+                    customer.bcgSegment = 'basic';
+                    customer.bcgSegmentName = 'Basic (기본)';
+                }
+            });
+        }
+
+        // 실시간 세분화 업데이트
+        function updateBCGSegmentationRealtime() {
+            if (!analysisResults.segmentation || !analysisResults.segmentation.customerMetrics) {
+                return;
+            }
+
+            // BCG 세분화 재적용
+            applyBCGSegmentation(analysisResults.segmentation.customerMetrics);
+
+            // BCG 세그먼트별 통계 재계산
+            const bcgSegmentStats = {};
+            ['star', 'cash-cow', 'question-mark', 'dog', 'basic'].forEach(segment => {
+                const segmentCustomers = analysisResults.segmentation.customerMetrics.filter(c => c.bcgSegment === segment);
+                bcgSegmentStats[segment] = {
+                    count: segmentCustomers.length,
+                    totalRecentMonthSales: sumBy(segmentCustomers, 'recentMonthSales'),
+                    avgRecentMonthSales: segmentCustomers.length > 0 ? sumBy(segmentCustomers, 'recentMonthSales') / segmentCustomers.length : 0,
+                    avgGrowth3Month: segmentCustomers.length > 0 ? sumBy(segmentCustomers, 'growthVs3Month') / segmentCustomers.length : 0,
+                    avgGrowthYearAgo: segmentCustomers.length > 0 ? sumBy(segmentCustomers, 'growthVsYearAgo') / segmentCustomers.length : 0,
+                    customers: segmentCustomers
+                };
+            });
+
+            analysisResults.segmentation.bcgSegmentStats = bcgSegmentStats;
+
+            // 화면 업데이트
+            displaySegmentationAnalysis();
+        }
+
+        // 고객 세분화 분석
+        function performCustomerSegmentation() {
+            if (!ensureLibrariesLoaded()) return;
+            
+            showStatus('고객 세분화 분석을 수행하고 있습니다...', 'info');
+            showLoading(true);
+            updateProgress(0);
+
+            try {
+                // 거래처별 지표 계산 (개선된 세분화 기준)
+                const accountData = groupBy(salesData, '거래처코드');
+                const customerMetrics = Object.entries(accountData).map(([accountCode, data]) => {
+                    const totalSales = sumBy(data, '총매출');
+                    const uniqueProducts = uniqBy(data, '품목군').length;
+                    
+                    // 월별 데이터 정렬 (최신순)
+                    const monthlyData = groupBy(data, '기준년월');
+                    const sortedMonths = Object.keys(monthlyData).map(Number).sort((a, b) => b - a);
+                    
+                    // 1. 가장 최근 월의 매출
+                    const recentMonth = sortedMonths[0];
+                    const recentMonthSales = recentMonth ? sumBy(monthlyData[recentMonth], '총매출') : 0;
+                    
+                    // 2. 최근 월을 제외한 마지막 3개월 평균 매출
+                    const last3MonthsExcludingRecent = sortedMonths.slice(1, 4);
+                    const avg3MonthSales = last3MonthsExcludingRecent.length > 0 
+                        ? last3MonthsExcludingRecent.reduce((sum, month) => sum + sumBy(monthlyData[month] || [], '총매출'), 0) / last3MonthsExcludingRecent.length 
+                        : 0;
+                    const growthVs3Month = recentMonthSales - avg3MonthSales;
+                    
+                    // 3. 작년 동월 대비 성장금액
+                    const recentYear = Math.floor(recentMonth / 100);
+                    const recentMonthNum = recentMonth % 100;
+                    const lastYearSameMonth = (recentYear - 1) * 100 + recentMonthNum;
+                    const lastYearSameMonthSales = monthlyData[lastYearSameMonth] ? sumBy(monthlyData[lastYearSameMonth], '총매출') : 0;
+                    const growthVsYearAgo = recentMonthSales - lastYearSameMonthSales;
+
+                    return {
+                        accountCode,
+                        accountName: data[0]['거래처명'],
+                        region: data[0]['권역'],
+                        manager: data[0]['담당자'],
+                        totalSales,
+                        uniqueProducts,
+                        recentMonthSales,        // 가장 최근 월 매출
+                        growthVs3Month,          // 3개월 평균 대비 성장금액
+                        growthVsYearAgo,         // 작년 동월 대비 성장금액
+                        avgOrderValue: totalSales / sortedMonths.length
+                    };
+                });
+
+                updateProgress(40);
+
+                // 기본 매출액 기준 세분화 적용
+                applySalesBasedSegmentation(customerMetrics);
+                
+                // BCG Matrix 세분화 적용
+                applyBCGSegmentation(customerMetrics);
+
+                updateProgress(60);
+
+                // 매출액 기준 세그먼트별 통계
+                const salesSegmentStats = {};
+                ['premium', 'high', 'medium', 'low'].forEach(segment => {
+                    const segmentCustomers = customerMetrics.filter(c => c.salesSegment === segment);
+                    salesSegmentStats[segment] = {
+                        count: segmentCustomers.length,
+                        totalRecentMonthSales: sumBy(segmentCustomers, 'recentMonthSales'),
+                        avgRecentMonthSales: segmentCustomers.length > 0 ? sumBy(segmentCustomers, 'recentMonthSales') / segmentCustomers.length : 0,
+                        avgGrowth3Month: segmentCustomers.length > 0 ? sumBy(segmentCustomers, 'growthVs3Month') / segmentCustomers.length : 0,
+                        avgGrowthYearAgo: segmentCustomers.length > 0 ? sumBy(segmentCustomers, 'growthVsYearAgo') / segmentCustomers.length : 0,
+                        customers: segmentCustomers
+                    };
+                });
+
+                updateProgress(80);
+
+                // BCG Matrix 세그먼트별 통계
+                const bcgSegmentStats = {};
+                ['star', 'cash-cow', 'question-mark', 'dog', 'basic'].forEach(segment => {
+                    const segmentCustomers = customerMetrics.filter(c => c.bcgSegment === segment);
+                    bcgSegmentStats[segment] = {
+                        count: segmentCustomers.length,
+                        totalRecentMonthSales: sumBy(segmentCustomers, 'recentMonthSales'),
+                        avgRecentMonthSales: segmentCustomers.length > 0 ? sumBy(segmentCustomers, 'recentMonthSales') / segmentCustomers.length : 0,
+                        avgGrowth3Month: segmentCustomers.length > 0 ? sumBy(segmentCustomers, 'growthVs3Month') / segmentCustomers.length : 0,
+                        avgGrowthYearAgo: segmentCustomers.length > 0 ? sumBy(segmentCustomers, 'growthVsYearAgo') / segmentCustomers.length : 0,
+                        customers: segmentCustomers
+                    };
+                });
+
+                analysisResults.segmentation = {
+                    customerMetrics,
+                    salesSegmentStats,
+                    bcgSegmentStats
+                };
+
+                updateProgress(100);
+                displaySegmentationAnalysis();
+                showStatus('고객 세분화 분석이 완료되었습니다.', 'success');
+                showLoading(false);
+            } catch (error) {
+                console.error('고객 세분화 분석 중 오류:', error);
+                showStatus('고객 세분화 분석 중 오류가 발생했습니다: ' + error.message, 'error');
+                showLoading(false);
+            }
+        }
+
+        // 세분화 분석 결과 표시
+        function displaySegmentationAnalysis() {
+            const analysisGrid = document.getElementById('analysisGrid');
+            analysisGrid.innerHTML = '';
+
+            // 1. 통합 세분화 개요 (매출 기준 + BCG Matrix)
+            const combinedSegmentOverviewCard = document.createElement('div');
+            combinedSegmentOverviewCard.className = 'analysis-card';
+            combinedSegmentOverviewCard.innerHTML = `
+                <h3>💰 매출액 기준 고객 세분화</h3>
+                <p style="margin-bottom: 15px; color: #9ca3af; font-size: 0.9rem;">
+                    클릭하여 해당 세그먼트의 거래처 목록을 확인하세요
+                </p>
+                <div class="stats-grid">
+                    ${Object.entries(analysisResults.segmentation.salesSegmentStats).map(([segment, stats]) => `
+                        <div class="stat-item segment-sales-${segment} clickable-segment" 
+                             onclick="showSegmentDetails('sales', '${segment}')" 
+                             style="cursor: pointer; transition: transform 0.2s ease;">
+                            <div class="stat-value">${stats.count}</div>
+                            <div class="stat-label">${getSalesSegmentName(segment)}</div>
+                        </div>
+                    `).join('')}
+                </div>
+                
+                <hr style="margin: 30px 0; border: none; border-top: 1px solid rgba(75, 85, 99, 0.3);">
+                
+                <h3>📊 BCG Matrix 고객 세분화</h3>
+                <p style="margin-bottom: 15px; color: #9ca3af; font-size: 0.9rem;">
+                    성장률과 매출 규모를 기준으로 한 포트폴리오 분석 - 클릭하여 세부 정보 확인
+                </p>
+                <div class="stats-grid">
+                    ${Object.entries(analysisResults.segmentation.bcgSegmentStats).map(([segment, stats]) => `
+                        <div class="stat-item segment-bcg-${segment} clickable-segment" 
+                             onclick="showSegmentDetails('bcg', '${segment}')" 
+                             style="cursor: pointer; transition: transform 0.2s ease;">
+                            <div class="stat-value">${stats.count}</div>
+                            <div class="stat-label">${getBCGSegmentName(segment)}</div>
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+            analysisGrid.appendChild(combinedSegmentOverviewCard);
+
+            // 2. BCG Matrix 기준 설정 컨트롤 패널
+            const criteriaCard = document.createElement('div');
+            criteriaCard.className = 'analysis-card';
+            criteriaCard.innerHTML = `
+                <h3>⚙️ BCG Matrix 기준 설정</h3>
+                <p style="margin-bottom: 20px; color: #9ca3af; font-size: 0.9rem;">
+                    슬라이더를 조정하여 BCG Matrix 세분화 기준을 실시간으로 변경할 수 있습니다.
+                </p>
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px;">
+                    
+                    <!-- Star 기준 -->
+                    <div style="background: rgba(255, 215, 0, 0.1); padding: 15px; border-radius: 10px; border-left: 4px solid #FFD700;">
+                        <h4 style="color: #FFD700; margin-bottom: 15px;">⭐ Star (스타)</h4>
+                        <div style="margin-bottom: 10px;">
+                            <label style="display: block; margin-bottom: 5px; font-size: 0.9rem; color: #d1d5db;">최근 월 최소 매출 (만원)</label>
+                            <input type="range" id="starMinSales" min="1000" max="10000" step="500" value="${bcgMatrixCriteria.star.minRecentSales / 10000}" 
+                                   style="width: 100%; margin-bottom: 5px;" oninput="updateBCGCriteria('star', 'minRecentSales', this.value * 10000)">
+                            <span id="starMinSalesValue" style="font-size: 0.8rem; color: #9ca3af;">${(bcgMatrixCriteria.star.minRecentSales / 10000).toLocaleString()}만원</span>
+                        </div>
+                        <div>
+                            <label style="display: block; margin-bottom: 5px; font-size: 0.9rem; color: #d1d5db;">3개월 대비 최소 성장 (만원)</label>
+                            <input type="range" id="starMinGrowth" min="-1000" max="1000" step="100" value="${bcgMatrixCriteria.star.minGrowth3Month / 10000}" 
+                                   style="width: 100%; margin-bottom: 5px;" oninput="updateBCGCriteria('star', 'minGrowth3Month', this.value * 10000)">
+                            <span id="starMinGrowthValue" style="font-size: 0.8rem; color: #9ca3af;">${(bcgMatrixCriteria.star.minGrowth3Month / 10000).toLocaleString()}만원</span>
+                        </div>
+                    </div>
+
+                    <!-- Cash Cow 기준 -->
+                    <div style="background: rgba(34, 197, 94, 0.1); padding: 15px; border-radius: 10px; border-left: 4px solid #22C55E;">
+                        <h4 style="color: #22C55E; margin-bottom: 15px;">🐄 Cash Cow (금고)</h4>
+                        <div style="margin-bottom: 10px;">
+                            <label style="display: block; margin-bottom: 5px; font-size: 0.9rem; color: #d1d5db;">최근 월 최소 매출 (만원)</label>
+                            <input type="range" id="cashCowMinSales" min="500" max="5000" step="100" value="${bcgMatrixCriteria.cashCow.minRecentSales / 10000}" 
+                                   style="width: 100%; margin-bottom: 5px;" oninput="updateBCGCriteria('cashCow', 'minRecentSales', this.value * 10000)">
+                            <span id="cashCowMinSalesValue" style="font-size: 0.8rem; color: #9ca3af;">${(bcgMatrixCriteria.cashCow.minRecentSales / 10000).toLocaleString()}만원</span>
+                        </div>
+                        <div>
+                            <label style="display: block; margin-bottom: 5px; font-size: 0.9rem; color: #d1d5db;">3개월 대비 최소 성장 (만원)</label>
+                            <input type="range" id="cashCowMinGrowth3M" min="-1000" max="500" step="50" value="${bcgMatrixCriteria.cashCow.minGrowth3Month / 10000}" 
+                                   style="width: 100%; margin-bottom: 5px;" oninput="updateBCGCriteria('cashCow', 'minGrowth3Month', this.value * 10000)">
+                            <span id="cashCowMinGrowth3MValue" style="font-size: 0.8rem; color: #9ca3af;">${(bcgMatrixCriteria.cashCow.minGrowth3Month / 10000).toLocaleString()}만원</span>
+                        </div>
+                    </div>
+
+                    <!-- Question Mark 기준 -->
+                    <div style="background: rgba(245, 158, 11, 0.1); padding: 15px; border-radius: 10px; border-left: 4px solid #f59e0b;">
+                        <h4 style="color: #f59e0b; margin-bottom: 15px;">❓ Question Mark (물음표)</h4>
+                        <div style="margin-bottom: 10px;">
+                            <label style="display: block; margin-bottom: 5px; font-size: 0.9rem; color: #d1d5db;">3개월 대비 성장률 (%)</label>
+                            <input type="range" id="questionMarkRate3M" min="5" max="50" step="5" value="${bcgMatrixCriteria.questionMark.growthRate3Month * 100}" 
+                                   style="width: 100%; margin-bottom: 5px;" oninput="updateBCGCriteria('questionMark', 'growthRate3Month', this.value / 100)">
+                            <span id="questionMarkRate3MValue" style="font-size: 0.8rem; color: #9ca3af;">${(bcgMatrixCriteria.questionMark.growthRate3Month * 100)}%</span>
+                        </div>
+                        <div>
+                            <label style="display: block; margin-bottom: 5px; font-size: 0.9rem; color: #d1d5db;">작년 동월 대비 성장률 (%)</label>
+                            <input type="range" id="questionMarkRateYear" min="5" max="50" step="5" value="${bcgMatrixCriteria.questionMark.growthRateYearAgo * 100}" 
+                                   style="width: 100%; margin-bottom: 5px;" oninput="updateBCGCriteria('questionMark', 'growthRateYearAgo', this.value / 100)">
+                            <span id="questionMarkRateYearValue" style="font-size: 0.8rem; color: #9ca3af;">${(bcgMatrixCriteria.questionMark.growthRateYearAgo * 100)}%</span>
+                        </div>
+                    </div>
+
+                    <!-- Dog 기준 -->
+                    <div style="background: rgba(239, 68, 68, 0.1); padding: 15px; border-radius: 10px; border-left: 4px solid #ef4444;">
+                        <h4 style="color: #ef4444; margin-bottom: 15px;">🐕 Dog (개)</h4>
+                        <div style="margin-bottom: 10px;">
+                            <label style="display: block; margin-bottom: 5px; font-size: 0.9rem; color: #d1d5db;">최근 월 최대 매출 (만원)</label>
+                            <input type="range" id="dogMaxSales" min="100" max="1000" step="50" value="${bcgMatrixCriteria.dog.maxRecentSales / 10000}" 
+                                   style="width: 100%; margin-bottom: 5px;" oninput="updateBCGCriteria('dog', 'maxRecentSales', this.value * 10000)">
+                            <span id="dogMaxSalesValue" style="font-size: 0.8rem; color: #9ca3af;">${(bcgMatrixCriteria.dog.maxRecentSales / 10000).toLocaleString()}만원</span>
+                        </div>
+                        <div>
+                            <label style="display: block; margin-bottom: 5px; font-size: 0.9rem; color: #d1d5db;">3개월 대비 최대 성장 (만원)</label>
+                            <input type="range" id="dogMaxGrowth3M" min="-2000" max="-200" step="100" value="${bcgMatrixCriteria.dog.maxGrowth3Month / 10000}" 
+                                   style="width: 100%; margin-bottom: 5px;" oninput="updateBCGCriteria('dog', 'maxGrowth3Month', this.value * 10000)">
+                            <span id="dogMaxGrowth3MValue" style="font-size: 0.8rem; color: #9ca3af;">${(bcgMatrixCriteria.dog.maxGrowth3Month / 10000).toLocaleString()}만원</span>
+                        </div>
+                    </div>
+                </div>
+            `;
+            analysisGrid.appendChild(criteriaCard);
+        }
+
+        // 추천 생성
+        function generateRecommendations() {
+            if (!analysisResults.basic || !analysisResults.segmentation) {
+                showStatus('기본 분석과 고객 세분화를 먼저 수행해주세요.', 'error');
+                return;
+            }
+
+            showStatus('개인화된 추천을 생성하고 있습니다...', 'info');
+            showLoading(true);
+            updateProgress(0);
+
+            try {
+                const recommendations = [];
+
+                // Premium/High 고객 대상 신제품 추천
+                const premiumCustomers = analysisResults.segmentation.salesSegmentStats['premium']?.customers || [];
+                const highCustomers = analysisResults.segmentation.salesSegmentStats['high']?.customers || [];
+                const highValueCustomers = [...premiumCustomers, ...highCustomers];
+
+                if (highValueCustomers.length > 0) {
+                    highValueCustomers.slice(0, 5).forEach(customer => {
+                        // 해당 고객이 구매하지 않은 인기 상품 찾기
+                        const customerProductData = salesData.filter(row => row['거래처코드'] === customer.accountCode);
+                        const customerProducts = uniqBy(customerProductData, '품목군').map(p => p['품목군']);
+                        const topProducts = analysisResults.basic.productAnalysis.slice(0, 10);
+                        const recommendedProducts = topProducts.filter(p => !customerProducts.includes(p.product));
+
+                        if (recommendedProducts.length > 0) {
+                            recommendations.push({
+                                type: 'product-recommendation',
+                                customer: customer,
+                                title: `${customer.accountName}에게 ${recommendedProducts[0].product} 제안`,
+                                description: `고가치 고객인 ${customer.accountName}에게 인기 상품 ${recommendedProducts[0].product}을 제안하세요. 이 상품은 평균 ${Math.round(recommendedProducts[0].avgPrice).toLocaleString()}원의 단가로 ${recommendedProducts[0].accountCount}개 거래처에서 구매하고 있습니다.`,
+                                expectedSales: Math.round(customer.recentMonthSales * 0.3),
+                                priority: 'high'
+                            });
+                        }
+                    });
+                }
+
+                updateProgress(30);
+
+                // Dog 세그먼트 고객 재참여 추천
+                const dogCustomers = analysisResults.segmentation.bcgSegmentStats['dog']?.customers || [];
+                if (dogCustomers.length > 0) {
+                    dogCustomers.slice(0, 3).forEach(customer => {
+                        recommendations.push({
+                            type: 'retention',
+                            customer: customer,
+                            title: `${customer.accountName} 재참여 캠페인`,
+                            description: `매출이 감소하고 있는 ${customer.accountName}에게 특별 할인이나 맞춤형 상품을 제안하여 재참여를 유도하세요. 최근 3개월 성장: ${Math.round(customer.growthVs3Month / 10000).toLocaleString()}만원`,
+                            expectedSales: Math.round(Math.abs(customer.growthVs3Month) * 0.5),
+                            priority: 'high'
+                        });
+                    });
+                }
+
+                updateProgress(60);
+
+                // Star 세그먼트 고객 업셀링 추천
+                const starCustomers = analysisResults.segmentation.bcgSegmentStats['star']?.customers || [];
+                if (starCustomers.length > 0) {
+                    starCustomers.slice(0, 3).forEach(customer => {
+                        const growthPotential = customer.growthVs3Month > 0 ? customer.growthVs3Month : customer.recentMonthSales * 0.2;
+
+                        recommendations.push({
+                            type: 'upselling',
+                            customer: customer,
+                            title: `${customer.accountName} 매출 확대 기회`,
+                            description: `성장세가 좋은 Star 고객 ${customer.accountName}의 매출을 더욱 확대할 기회입니다. 추가 상품 제안이나 수량 증대를 고려해보세요. 현재 3개월 성장률: +${Math.round(customer.growthVs3Month / 10000).toLocaleString()}만원`,
+                            expectedSales: Math.round(growthPotential * 0.5),
+                            priority: 'medium'
+                        });
+                    });
+                }
+
+                updateProgress(80);
+
+                // Question Mark 세그먼트 집중 관리 추천
+                const questionMarkCustomers = analysisResults.segmentation.bcgSegmentStats['question-mark']?.customers || [];
+                if (questionMarkCustomers.length > 0) {
+                    questionMarkCustomers.slice(0, 3).forEach(customer => {
+                        recommendations.push({
+                            type: 'focus-management',
+                            customer: customer,
+                            title: `${customer.accountName} 집중 관리 필요`,
+                            description: `Question Mark 고객 ${customer.accountName}은 성장 잠재력이 있지만 불안정합니다. 정기적인 소통과 맞춤형 서비스로 Star 고객으로 전환을 도모하세요.`,
+                            expectedSales: Math.round(customer.recentMonthSales * 0.4),
+                            priority: 'medium'
+                        });
+                    });
+                }
+
+                updateProgress(90);
+
+                // 교차 판매 추천 (Cash Cow 고객 대상)
+                const cashCowCustomers = analysisResults.segmentation.bcgSegmentStats['cash-cow']?.customers || [];
+                const topProducts = analysisResults.basic.productAnalysis.slice(0, 5);
+                
+                if (cashCowCustomers.length > 0 && topProducts.length > 0) {
+                    cashCowCustomers.slice(0, 2).forEach(customer => {
+                        const customerProductData = salesData.filter(row => row['거래처코드'] === customer.accountCode);
+                        const customerProducts = uniqBy(customerProductData, '품목군').map(p => p['품목군']);
+                        const recommendedProducts = topProducts.filter(p => !customerProducts.includes(p.product));
+
+                        if (recommendedProducts.length > 0) {
+                            recommendations.push({
+                                type: 'cross-selling',
+                                customer: customer,
+                                title: `${customer.accountName}에게 ${recommendedProducts[0].product} 교차 판매`,
+                                description: `안정적인 Cash Cow 고객 ${customer.accountName}이 아직 구매하지 않은 인기 상품 ${recommendedProducts[0].product}을 제안하세요. 이 상품은 평균 ${Math.round(recommendedProducts[0].avgPrice).toLocaleString()}원의 단가를 가지고 있습니다.`,
+                                expectedSales: Math.round(recommendedProducts[0].avgPrice * 30),
+                                priority: 'low'
+                            });
+                        }
+                    });
+                }
+
+                analysisResults.recommendations = recommendations;
+                updateProgress(100);
+                displayRecommendations();
+                showStatus('개인화된 추천이 생성되었습니다.', 'success');
+                showLoading(false);
+            } catch (error) {
+                console.error('추천 생성 중 오류:', error);
+                showStatus('추천 생성 중 오류가 발생했습니다: ' + error.message, 'error');
+                showLoading(false);
+            }
+        }
+
+        // 추천 결과 표시
+        function displayRecommendations() {
+            const analysisGrid = document.getElementById('analysisGrid');
+            analysisGrid.innerHTML = '';
+
+            // 추천 요약
+            const recommendationSummaryCard = document.createElement('div');
+            recommendationSummaryCard.className = 'analysis-card';
+            const totalExpectedSales = sumBy(analysisResults.recommendations, 'expectedSales');
+            recommendationSummaryCard.innerHTML = `
+                <h3>💡 추천 요약</h3>
+                <div class="stats-grid">
+                    <div class="stat-item">
+                        <div class="stat-value">${analysisResults.recommendations.length}</div>
+                        <div class="stat-label">총 추천 수</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value">${Math.round(totalExpectedSales / 10000).toLocaleString()}</div>
+                        <div class="stat-label">예상 매출 (만원)</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value">${analysisResults.recommendations.filter(r => r.priority === 'high').length}</div>
+                        <div class="stat-label">고우선순위</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value">${uniqBy(analysisResults.recommendations, 'customer.accountCode').length}</div>
+                        <div class="stat-label">대상 거래처</div>
+                    </div>
+                </div>
+            `;
+            analysisGrid.appendChild(recommendationSummaryCard);
+
+            // 우선순위별 추천
+            const priorityOrder = ['high', 'medium', 'low'];
+            priorityOrder.forEach(priority => {
+                const priorityRecommendations = analysisResults.recommendations.filter(r => r.priority === priority);
+                if (priorityRecommendations.length > 0) {
+                    const priorityCard = document.createElement('div');
+                    priorityCard.className = 'analysis-card';
+                    priorityCard.innerHTML = `
+                        <h3>${getPriorityEmoji(priority)} ${getPriorityName(priority)} 추천 (${priorityRecommendations.length}개)</h3>
+                        <div>
+                            ${priorityRecommendations.map(rec => `
+                                <div class="recommendation-item">
+                                    <div class="recommendation-title">${rec.title}</div>
+                                    <div class="recommendation-description">${rec.description}</div>
+                                    <div class="recommendation-metrics">
+                                        <span><strong>예상 매출:</strong> ${Math.round(rec.expectedSales / 10000).toLocaleString()}만원</span>
+                                        <span><strong>담당자:</strong> ${rec.customer.manager}</span>
+                                        <span><strong>권역:</strong> ${rec.customer.region}</span>
+                                    </div>
+                                </div>
+                            `).join('')}
+                        </div>
+                    `;
+                    analysisGrid.appendChild(priorityCard);
+                }
+            });
+        }
+
+        // 분석 결과 내보내기 (기본 분석에서 이미 통합되었으므로 별도 카드 생성하지 않음)
+        function exportAnalysis() {
+            if (!analysisResults.basic) {
+                showStatus('내보낼 분석 결과가 없습니다. 먼저 분석을 수행해주세요.', 'error');
+                return;
+            }
+            
+            showStatus('내보내기 기능은 기본 분석 화면의 우측 카드에서 이용하실 수 있습니다.', 'info');
+        }
+
+        // CSV 내보내기
+        function exportToCSV() {
+            try {
+                let csvContent = "data:text/csv;charset=utf-8,";
+                
+                // 기본 분석 데이터
+                csvContent += "분석 유형,항목,값\n";
+                csvContent += `기본통계,총거래처,${processedData.uniqueAccounts}\n`;
+                csvContent += `기본통계,총품목수,${processedData.uniqueProducts}\n`;
+                csvContent += `기본통계,총매출,${processedData.totalSales}\n`;
+                csvContent += `기본통계,총거래건수,${processedData.totalRecords}\n`;
+                
+                // 상위 품목
+                csvContent += "\n상위 품목 분석\n";
+                csvContent += "순위,품목군,매출액,거래처수,평균단가\n";
+                analysisResults.basic.productAnalysis.slice(0, 10).forEach((item, index) => {
+                    csvContent += `${index + 1},${item.product},${item.totalSales},${item.accountCount},${Math.round(item.avgPrice)}\n`;
+                });
+
+                const encodedUri = encodeURI(csvContent);
+                const link = document.createElement("a");
+                link.setAttribute("href", encodedUri);
+                link.setAttribute("download", "sales_analysis.csv");
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                
+                showStatus('CSV 파일이 다운로드되었습니다.', 'success');
+            } catch (error) {
+                showStatus('CSV 내보내기 중 오류가 발생했습니다.', 'error');
+            }
+        }
+
+        // JSON 내보내기
+        function exportToJSON() {
+            try {
+                const exportData = {
+                    timestamp: new Date().toISOString(),
+                    summary: processedData,
+                    basicAnalysis: analysisResults.basic,
+                    segmentation: analysisResults.segmentation,
+                    recommendations: analysisResults.recommendations
+                };
+
+                const dataStr = JSON.stringify(exportData, null, 2);
+                const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
+                
+                const link = document.createElement('a');
+                link.setAttribute('href', dataUri);
+                link.setAttribute('download', 'sales_analysis.json');
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                
+                showStatus('JSON 파일이 다운로드되었습니다.', 'success');
+            } catch (error) {
+                showStatus('JSON 내보내기 중 오류가 발생했습니다.', 'error');
+            }
+        }
+
+        // PDF 리포트 생성 (간단한 HTML 출력)
+        function exportToPDF() {
+            const printWindow = window.open('', '_blank');
+            const printContent = `
+                <html>
+                <head>
+                    <title>영업 분석 리포트</title>
+                    <style>
+                        body { font-family: Arial, sans-serif; margin: 20px; }
+                        h1, h2 { color: #333; }
+                        table { border-collapse: collapse; width: 100%; margin: 20px 0; }
+                        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+                        th { background-color: #f2f2f2; }
+                        .stat { margin: 10px 0; }
+                    </style>
+                </head>
+                <body>
+                    <h1>영업 분석 리포트</h1>
+                    <p>생성일시: ${new Date().toLocaleString()}</p>
+                    
+                    <h2>핵심 지표</h2>
+                    <div class="stat">총 거래처: ${processedData.uniqueAccounts.toLocaleString()}개</div>
+                    <div class="stat">총 품목 수: ${processedData.uniqueProducts.toLocaleString()}개</div>
+                    <div class="stat">총 매출: ${Math.round(processedData.totalSales / 100000000).toLocaleString()}억원</div>
+                    <div class="stat">총 거래 건수: ${processedData.totalRecords.toLocaleString()}건</div>
+                    
+                    <h2>상위 품목 성과</h2>
+                    <table>
+                        <thead>
+                            <tr><th>순위</th><th>품목군</th><th>매출액</th><th>거래처 수</th><th>평균단가</th></tr>
+                        </thead>
+                        <tbody>
+                            ${analysisResults.basic.productAnalysis.slice(0, 10).map((item, index) => `
+                                <tr>
+                                    <td>${index + 1}</td>
+                                    <td>${item.product}</td>
+                                    <td>${Math.round(item.totalSales / 10000).toLocaleString()}만원</td>
+                                    <td>${item.accountCount}개</td>
+                                    <td>${Math.round(item.avgPrice).toLocaleString()}원</td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                </body>
+                </html>
+            `;
+            
+            printWindow.document.write(printContent);
+            printWindow.document.close();
+            printWindow.print();
+            
+            showStatus('PDF 인쇄 다이얼로그가 열렸습니다.', 'success');
+        }
+
+        // 헬퍼 함수들
+        function getSalesSegmentName(segment) {
+            const names = {
+                'premium': '1,000만원 이상',
+                'high': '500~1,000만원',
+                'medium': '100~500만원',
+                'low': '100만원 미만'
+            };
+            return names[segment] || segment;
+        }
+
+        function getSalesSegmentEmoji(segment) {
+            const emojis = {
+                'premium': '💎',
+                'high': '🏆',
+                'medium': '📈',
+                'low': '🔰'
+            };
+            return emojis[segment] || '📊';
+        }
+
+        function getBCGSegmentName(segment) {
+            const names = {
+                'star': 'Star (스타)',
+                'cash-cow': 'Cash Cow (금고)',
+                'question-mark': 'Question Mark (물음표)',
+                'dog': 'Dog (개)',
+                'basic': 'Basic (기본)'
+            };
+            return names[segment] || segment;
+        }
+
+        function getBCGSegmentEmoji(segment) {
+            const emojis = {
+                'star': '⭐',
+                'cash-cow': '🐄',
+                'question-mark': '❓',
+                'dog': '🐕',
+                'basic': '👤'
+            };
+            return emojis[segment] || '📊';
+        }
+
+        function getPriorityName(priority) {
+            const names = {
+                'high': '높은 우선순위',
+                'medium': '보통 우선순위',
+                'low': '낮은 우선순위'
+            };
+            return names[priority] || priority;
+        }
+
+        function getPriorityEmoji(priority) {
+            const emojis = {
+                'high': '🚨',
+                'medium': '📋',
+                'low': '💡'
+            };
+            return emojis[priority] || '📊';
+        }
+
+        // 세그먼트별 거래처 상세 표시 함수
+        function showSegmentDetails(segmentType, segment) {
+            if (!analysisResults.segmentation) {
+                showStatus('세분화 데이터가 없습니다.', 'error');
+                return;
+            }
+
+            // 기존 세그먼트 상세 카드가 있으면 제거
+            const existingCard = document.getElementById('segmentDetailCard');
+            if (existingCard) {
+                existingCard.remove();
+            }
+
+            // 세그먼트별 데이터 가져오기
+            let segmentStats, segmentName, segmentEmoji, segmentClass;
+            if (segmentType === 'sales') {
+                segmentStats = analysisResults.segmentation.salesSegmentStats[segment];
+                segmentName = getSalesSegmentName(segment);
+                segmentEmoji = getSalesSegmentEmoji(segment);
+                segmentClass = `segment-sales-${segment}`;
+            } else if (segmentType === 'bcg') {
+                segmentStats = analysisResults.segmentation.bcgSegmentStats[segment];
+                segmentName = getBCGSegmentName(segment);
+                segmentEmoji = getBCGSegmentEmoji(segment);
+                segmentClass = `segment-bcg-${segment}`;
+            }
+
+            if (!segmentStats || segmentStats.count === 0) {
+                showStatus(`${segmentName} 세그먼트에 해당하는 거래처가 없습니다.`, 'info');
+                return;
+            }
+
+            // 새로운 상세 카드 생성
+            const analysisGrid = document.getElementById('analysisGrid');
+            const segmentDetailCard = document.createElement('div');
+            segmentDetailCard.id = 'segmentDetailCard';
+            segmentDetailCard.className = `analysis-card ${segmentClass}`;
+            segmentDetailCard.style.border = '2px solid rgba(0, 212, 255, 0.3)';
+
+            const recentMonthFormatted = processedData.recentMonth ? `${Math.floor(processedData.recentMonth / 100)}년 ${processedData.recentMonth % 100}월` : '';
+
+            segmentDetailCard.innerHTML = `
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                    <h3 style="margin: 0;">${segmentEmoji} ${segmentName} 세그먼트 상세 (${segmentStats.count}개)</h3>
+                    <button onclick="document.getElementById('segmentDetailCard').remove()" 
+                            style="background: rgba(239, 68, 68, 0.8); color: white; border: none; border-radius: 8px; padding: 8px 12px; cursor: pointer; font-size: 0.9rem;">
+                        ✕ 닫기
+                    </button>
+                </div>
+                
+                <div style="margin-bottom: 20px; padding: 15px; background: rgba(31, 41, 55, 0.3); border-radius: 10px;">
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px;">
+                        <div>
+                            <strong style="color: #00d4ff;">최근월 매출 합계</strong><br>
+                            <span style="font-size: 1.2rem; color: #ffffff;">${Math.round(segmentStats.totalRecentMonthSales / 100000000).toLocaleString()}억원</span>
+                        </div>
+                        <div>
+                            <strong style="color: #00d4ff;">평균 최근월 매출</strong><br>
+                            <span style="font-size: 1.2rem; color: #ffffff;">${Math.round(segmentStats.avgRecentMonthSales / 10000).toLocaleString()}만원</span>
+                        </div>
+                        <div>
+                            <strong style="color: #00d4ff;">평균 3개월 성장</strong><br>
+                            <span style="font-size: 1.2rem; color: ${segmentStats.avgGrowth3Month >= 0 ? '#10b981' : '#ef4444'};">${segmentStats.avgGrowth3Month >= 0 ? '+' : ''}${Math.round(segmentStats.avgGrowth3Month / 10000).toLocaleString()}만원</span>
+                        </div>
+                        <div>
+                            <strong style="color: #00d4ff;">평균 작년 동월 성장</strong><br>
+                            <span style="font-size: 1.2rem; color: ${segmentStats.avgGrowthYearAgo >= 0 ? '#10b981' : '#ef4444'};">${segmentStats.avgGrowthYearAgo >= 0 ? '+' : ''}${Math.round(segmentStats.avgGrowthYearAgo / 10000).toLocaleString()}만원</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>순위</th>
+                                <th>거래처명</th>
+                                <th>최근월 매출</th>
+                                <th>3개월 성장</th>
+                                <th>작년 동월 성장</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${segmentStats.customers.map((customer, index) => `
+                                <tr>
+                                    <td><strong>${index + 1}</strong></td>
+                                    <td><strong>${customer.accountName}</strong></td>
+                                    <td><strong>${Math.round(customer.recentMonthSales / 10000).toLocaleString()}</strong>만원</td>
+                                    <td style="color: ${customer.growthVs3Month >= 0 ? '#10b981' : '#ef4444'}; font-weight: 600;">${customer.growthVs3Month >= 0 ? '+' : ''}${Math.round(customer.growthVs3Month / 10000).toLocaleString()}만원</td>
+                                    <td style="color: ${customer.growthVsYearAgo >= 0 ? '#10b981' : '#ef4444'}; font-weight: 600;">${customer.growthVsYearAgo >= 0 ? '+' : ''}${Math.round(customer.growthVsYearAgo / 10000).toLocaleString()}만원</td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                </div>
+            `;
+
+            // 카드를 맨 위에 삽입
+            analysisGrid.insertBefore(segmentDetailCard, analysisGrid.firstChild);
+            
+            // 카드로 스크롤
+            segmentDetailCard.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            
+            showStatus(`${segmentName} 세그먼트의 거래처 ${segmentStats.count}개를 표시했습니다.`, 'success');
+        }
+
+        // 품목별 거래처 표시 함수
+        function showProductCustomers(productName) {
+            if (!salesData || salesData.length === 0) {
+                showStatus('데이터가 없습니다.', 'error');
+                return;
+            }
+
+            // 해당 품목의 전체 데이터 필터링
+            const productData = salesData.filter(row => row['품목군'] === productName);
+
+            if (productData.length === 0) {
+                showStatus(`${productName} 품목의 데이터를 찾을 수 없습니다.`, 'error');
+                return;
+            }
+
+            // 월별 품목 매출 및 활동 추이 계산
+            const monthlyProductData = groupBy(productData, row => row['기준년월']);
+            const monthlyProductSales = Object.entries(monthlyProductData)
+                .map(([month, data]) => {
+                    const totalSales = sumBy(data, '총매출');
+                    const recordCount = data.length; // 거래처-품목 조합 수
+                    const uniqueAccounts = uniqBy(data, '거래처코드').length;
+                    const totalQty = sumBy(data, '총수량');
+                    return [month, totalSales, recordCount, uniqueAccounts, totalQty];
+                })
+                .sort((a, b) => a[0] - b[0]);
+
+            // 해당 품목을 구매하는 최근 월 데이터 필터링
+            const recentMonthData = salesData.filter(row => 
+                row['기준년월'] === processedData.recentMonth && row['품목군'] === productName
+            );
+
+            // 거래처별 집계
+            const customerData = groupBy(recentMonthData, '거래처코드');
+            const customerList = Object.entries(customerData).map(([accountCode, data]) => {
+                const totalSales = sumBy(data, '총매출');
+                const totalQty = sumBy(data, '총수량');
+                return {
+                    accountCode,
+                    accountName: data[0]['거래처명'],
+                    region: data[0]['권역'],
+                    manager: data[0]['담당자'],
+                    totalSales,
+                    totalQty,
+                    avgPrice: totalQty > 0 ? totalSales / totalQty : 0
+                };
+            }).sort((a, b) => b.totalSales - a.totalSales);
+
+            // 기존 품목 상세 카드가 있으면 제거
+            const existingCard = document.getElementById('productDetailCard');
+            if (existingCard) {
+                existingCard.remove();
+            }
+
+            // 새로운 카드 생성
+            const analysisGrid = document.getElementById('analysisGrid');
+            const productDetailCard = document.createElement('div');
+            productDetailCard.id = 'productDetailCard';
+            productDetailCard.className = 'analysis-card';
+            productDetailCard.style.background = 'linear-gradient(135deg, rgba(0, 212, 255, 0.1), rgba(124, 58, 237, 0.1))';
+            productDetailCard.style.border = '2px solid rgba(0, 212, 255, 0.3)';
+
+            const totalProductSales = sumBy(customerList, 'totalSales');
+            const totalProductQty = sumBy(customerList, 'totalQty');
+            const recentMonthFormatted = processedData.recentMonth ? `${Math.floor(processedData.recentMonth / 100)}년 ${processedData.recentMonth % 100}월` : '';
+
+            productDetailCard.innerHTML = `
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                    <h3 style="margin: 0;">🔍 ${productName} 상세 분석</h3>
+                    <button onclick="document.getElementById('productDetailCard').remove()" 
+                            style="background: rgba(239, 68, 68, 0.8); color: white; border: none; border-radius: 8px; padding: 8px 12px; cursor: pointer; font-size: 0.9rem;">
+                        ✕ 닫기
+                    </button>
+                </div>
+                
+                <h4 style="margin-bottom: 15px; color: #ffffff; font-size: 1.1rem;">📈 ${productName} 월별 매출 및 거래 활동 추이</h4>
+                <p style="margin-bottom: 15px; color: #9ca3af; font-size: 0.9rem;">
+                    이 품목의 월별 매출액과 거래처 활동 변화를 보여줍니다.
+                </p>
+                <div class="chart-container">
+                    <canvas id="productMonthlySalesChart"></canvas>
+                </div>
+                
+                <hr style="margin: 30px 0; border: none; border-top: 1px solid rgba(75, 85, 99, 0.3);">
+                
+                <h4 style="margin-bottom: 15px; color: #ffffff; font-size: 1.1rem;">🏪 최근월 구매 거래처 (${recentMonthFormatted})</h4>
+                <div class="stats-grid" style="margin-bottom: 20px;">
+                    <div class="stat-item">
+                        <div class="stat-value">${customerList.length}</div>
+                        <div class="stat-label">구매 거래처 수</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value">${Math.round(totalProductSales / 10000).toLocaleString()}</div>
+                        <div class="stat-label">최근월 매출 (만원)</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value">${customerList.length > 0 ? Math.round(totalProductSales / customerList.length / 10000).toLocaleString() : 0}</div>
+                        <div class="stat-label">거래처당 평균매출 (만원)</div>
+                    </div>
+                </div>
+
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>순위</th>
+                                <th>거래처명</th>
+                                <th>매출액</th>
+                                <th>점유율</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${customerList.map((customer, index) => {
+                                const salesShare = totalProductSales > 0 ? ((customer.totalSales / totalProductSales) * 100).toFixed(1) : '0.0';
+                                return `
+                                    <tr>
+                                        <td><strong>${index + 1}</strong></td>
+                                        <td><strong>${customer.accountName}</strong></td>
+                                        <td><strong>${Math.round(customer.totalSales / 10000).toLocaleString()}</strong>만원</td>
+                                        <td><span style="color: ${salesShare > 20 ? '#10b981' : salesShare > 10 ? '#f59e0b' : '#6b7280'}; font-weight: 600;">${salesShare}%</span></td>
+                                    </tr>
+                                `;
+                            }).join('')}
+                        </tbody>
+                    </table>
+                </div>
+            `;
+
+            // 카드를 맨 위에 삽입
+            analysisGrid.insertBefore(productDetailCard, analysisGrid.firstChild);
+            
+            // 품목별 월별 차트 생성
+            setTimeout(() => {
+                createProductMonthlySalesChart(monthlyProductSales, productName);
+            }, 100);
+            
+            // 카드로 스크롤
+            productDetailCard.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            
+            showStatus(`${productName} 품목의 월별 추이와 거래처 ${customerList.length}개를 표시했습니다.`, 'success');
+        }
+
+        // BCG Matrix 기준 업데이트 함수
+        function updateBCGCriteria(segment, field, value) {
+            bcgMatrixCriteria[segment][field] = parseFloat(value);
+            
+            // 표시값 업데이트
+            if (segment === 'star') {
+                if (field === 'minRecentSales') {
+                    document.getElementById('starMinSalesValue').textContent = (value / 10000).toLocaleString() + '만원';
+                } else if (field === 'minGrowth3Month') {
+                    document.getElementById('starMinGrowthValue').textContent = (value / 10000).toLocaleString() + '만원';
+                }
+            } else if (segment === 'cashCow') {
+                if (field === 'minRecentSales') {
+                    document.getElementById('cashCowMinSalesValue').textContent = (value / 10000).toLocaleString() + '만원';
+                } else if (field === 'minGrowth3Month') {
+                    document.getElementById('cashCowMinGrowth3MValue').textContent = (value / 10000).toLocaleString() + '만원';
+                }
+            } else if (segment === 'questionMark') {
+                if (field === 'growthRate3Month') {
+                    document.getElementById('questionMarkRate3MValue').textContent = (value * 100) + '%';
+                } else if (field === 'growthRateYearAgo') {
+                    document.getElementById('questionMarkRateYearValue').textContent = (value * 100) + '%';
+                }
+            } else if (segment === 'dog') {
+                if (field === 'maxRecentSales') {
+                    document.getElementById('dogMaxSalesValue').textContent = (value / 10000).toLocaleString() + '만원';
+                } else if (field === 'maxGrowth3Month') {
+                    document.getElementById('dogMaxGrowth3MValue').textContent = (value / 10000).toLocaleString() + '만원';
+                }
+            }
+            
+            // 실시간 BCG 세분화 업데이트
+            updateBCGSegmentationRealtime();
+        }
+
+        // 자동 파일 로드 시도
+        async function tryAutoLoadFile() {
+            try {
+                showStatus('rx-rawdata.csv 파일을 찾는 중입니다...', 'info');
+                
+                // 같은 디렉토리의 rx-rawdata.csv 파일 시도
+                const response = await fetch('./rx-rawdata.csv');
+                
+                if (response.ok) {
+                    const csvText = await response.text();
+                    showStatus('rx-rawdata.csv 파일을 발견했습니다. 자동으로 로드합니다...', 'success');
+                    
+                    // 파일 업로드 영역 숨김
+                    document.getElementById('fileInputArea').style.display = 'none';
+                    
+                    // CSV 데이터 파싱
+                    showLoading(true);
+                    updateProgress(20);
+                    
+                    Papa.parse(csvText, {
+                        header: true,
+                        skipEmptyLines: true,
+                        dynamicTyping: true,
+                        complete: function(results) {
+                            try {
+                                if (results.errors.length > 0) {
+                                    console.warn('CSV 파싱 경고:', results.errors);
+                                }
+
+                                if (!results.data || results.data.length === 0) {
+                                    showStatus('파일에 유효한 데이터가 없습니다.', 'error');
+                                    showFileUploadArea();
+                                    showLoading(false);
+                                    return;
+                                }
+
+                                salesData = results.data.filter(row => {
+                                    return Object.values(row).some(value => 
+                                        value !== null && value !== undefined && value !== ''
+                                    );
+                                });
+
+                                if (salesData.length === 0) {
+                                    showStatus('파일에서 유효한 데이터를 찾을 수 없습니다.', 'error');
+                                    showFileUploadArea();
+                                    showLoading(false);
+                                    return;
+                                }
+
+                                preprocessData();
+                                showStatus(`자동 로드 완료: ${salesData.length.toLocaleString()}개 레코드`, 'success');
+                                enableAnalysisButtons();
+                                showManualUploadButton(); // 수동 업로드 버튼 표시
+                                updateProgress(100);
+                                showLoading(false);
+                                
+                                // 자동으로 기본 분석 실행
+                                setTimeout(() => {
+                                    performBasicAnalysis();
+                                }, 500);
+                            } catch (error) {
+                                console.error('파일 처리 중 오류:', error);
+                                showStatus('파일 처리 중 오류가 발생했습니다: ' + error.message, 'error');
+                                showFileUploadArea();
+                                showLoading(false);
+                            }
+                        },
+                        error: function(error) {
+                            console.error('CSV 파싱 오류:', error);
+                            showStatus('CSV 파일 파싱 중 오류가 발생했습니다.', 'error');
+                            showFileUploadArea();
+                            showLoading(false);
+                        }
+                    });
+                } else {
+                    // 파일이 없으면 업로드 영역 표시
+                    showFileUploadArea();
+                }
+            } catch (error) {
+                console.log('rx-rawdata.csv 파일을 찾을 수 없습니다. 파일 업로드 메뉴를 표시합니다.');
+                showFileUploadArea();
+            }
+        }
+
+        // 파일 업로드 영역 표시
+        function showFileUploadArea() {
+            document.getElementById('fileInputArea').style.display = 'block';
+            showStatus('CSV 파일을 업로드하거나 데모 데이터를 생성하세요.', 'info');
+        }
+
+        // 수동 업로드 버튼 표시
+        function showManualUploadButton() {
+            document.getElementById('manualUploadBtn').style.display = 'inline-block';
+        }
+
+        // 수동 업로드 표시
+        function showManualUpload() {
+            document.getElementById('fileInputArea').style.display = 'block';
+            showStatus('다른 CSV 파일을 업로드하거나 데모 데이터를 생성하세요.', 'info');
+        }
+
+        // 초기화
+        document.addEventListener('DOMContentLoaded', function() {
+            setupFileHandling();
+            loadLibraries();
+            
+            // 라이브러리 로드 완료 후 자동 파일 로드 시도
+            const checkAndAutoLoad = () => {
+                if (librariesLoaded) {
+                    // 현재 URL이 HTTP/HTTPS 프로토콜인지 확인
+                    if (window.location.protocol === 'file:') {
+                        showFileUploadArea();
+                        showStatus('💡 로컬 서버를 실행하고 http://localhost:8000/advisor.html 로 접속하면 CSV 파일이 자동으로 로드됩니다.', 'info');
+                    } else {
+                        tryAutoLoadFile();
+                    }
+                } else {
+                    setTimeout(checkAndAutoLoad, 100);
+                }
+            };
+            
+            checkAndAutoLoad();
+        });
+    </script>
+</body>
+</html> 

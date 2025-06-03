@@ -1,0 +1,737 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>스마트 영업 어드바이저 (정적 버전)</title>
+    <style>
+        /* 기존 CSS 스타일 유지 */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            color: white;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .header p {
+            font-size: 1.2rem;
+            opacity: 0.9;
+        }
+
+        .main-content {
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            margin-bottom: 30px;
+        }
+
+        .action-buttons {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .btn {
+            background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+            color: white;
+            border: none;
+            padding: 20px 30px;
+            border-radius: 12px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-align: left;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(79, 70, 229, 0.3);
+        }
+
+        .btn .icon {
+            font-size: 1.5rem;
+        }
+
+        .status-message {
+            padding: 15px;
+            border-radius: 8px;
+            margin: 20px 0;
+            font-weight: 500;
+        }
+
+        .status-success {
+            background: #dcfce7;
+            color: #166534;
+            border: 1px solid #bbf7d0;
+        }
+
+        .status-error {
+            background: #fef2f2;
+            color: #dc2626;
+            border: 1px solid #fecaca;
+        }
+
+        .status-warning {
+            background: #fffbeb;
+            color: #d97706;
+            border: 1px solid #fed7aa;
+        }
+
+        .results-section {
+            display: none;
+            margin-top: 30px;
+        }
+
+        .results-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #e5e7eb;
+        }
+
+        .results-title {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: #1f2937;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .recommendation-card {
+            background: #f8fafc;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 15px;
+            border-left: 4px solid #4f46e5;
+            transition: all 0.3s ease;
+        }
+
+        .recommendation-card:hover {
+            background: #f1f5f9;
+            transform: translateX(5px);
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 15px;
+        }
+
+        .customer-name {
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: #1f2937;
+            margin-bottom: 5px;
+        }
+
+        .customer-info {
+            font-size: 0.9rem;
+            color: #6b7280;
+        }
+
+        .scores {
+            text-align: right;
+        }
+
+        .score-item {
+            margin-bottom: 5px;
+        }
+
+        .score-label {
+            font-size: 0.8rem;
+            color: #6b7280;
+        }
+
+        .score-value {
+            font-weight: 600;
+            margin-left: 5px;
+        }
+
+        .expected-sales {
+            color: #059669;
+        }
+
+        .success-rate {
+            color: #dc2626;
+        }
+
+        .similarity-score {
+            color: #7c3aed;
+        }
+
+        .specialty-score {
+            color: #ea580c;
+        }
+
+        .card-details {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+
+        .detail-item {
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .detail-label {
+            font-weight: 500;
+            color: #374151;
+        }
+
+        .detail-value {
+            color: #6b7280;
+        }
+
+        .recommendation-reason {
+            background: white;
+            padding: 12px;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            color: #4b5563;
+            border: 1px solid #e5e7eb;
+        }
+
+        /* 다이얼로그 스타일 */
+        .dialog-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .dialog-content {
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            max-width: 600px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+
+        .dialog-header {
+            text-align: center;
+            margin-bottom: 25px;
+        }
+
+        .dialog-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #1f2937;
+            margin-bottom: 10px;
+        }
+
+        .search-box {
+            margin-bottom: 20px;
+        }
+
+        .search-input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e5e7eb;
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: border-color 0.3s ease;
+        }
+
+        .search-input:focus {
+            outline: none;
+            border-color: #4f46e5;
+        }
+
+        .product-list {
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .product-item {
+            padding: 12px;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            margin-bottom: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .product-item:hover {
+            background: #f3f4f6;
+            border-color: #4f46e5;
+        }
+
+        .product-name {
+            font-weight: 500;
+            color: #1f2937;
+        }
+
+        .product-info {
+            font-size: 0.8rem;
+            color: #6b7280;
+            text-align: right;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #6b7280;
+        }
+
+        .loading-spinner {
+            display: inline-block;
+            width: 40px;
+            height: 40px;
+            border: 4px solid #e5e7eb;
+            border-radius: 50%;
+            border-top-color: #4f46e5;
+            animation: spin 1s ease-in-out infinite;
+            margin-bottom: 15px;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .data-info {
+            background: #f8fafc;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 20px;
+            font-size: 0.9rem;
+            color: #4b5563;
+        }
+
+        .data-info h4 {
+            color: #1f2937;
+            margin-bottom: 8px;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 10px;
+            }
+
+            .main-content {
+                padding: 20px;
+            }
+
+            .header h1 {
+                font-size: 2rem;
+            }
+
+            .card-details {
+                grid-template-columns: 1fr;
+            }
+
+            .card-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 10px;
+            }
+
+            .scores {
+                text-align: left;
+                display: flex;
+                gap: 15px;
+                flex-wrap: wrap;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🎯 스마트 영업 어드바이저</h1>
+            <p>SmartAI 추천 엔진으로 최적의 영업 타겟을 찾아보세요 (정적 버전)</p>
+        </div>
+
+        <div class="main-content">
+            <div class="action-buttons">
+                <button class="btn" onclick="showProductSelection()">
+                    <div>
+                        <div style="font-size: 1.3rem; margin-bottom: 5px;">🎯 SmartAI 추천</div>
+                        <div style="font-size: 0.9rem; opacity: 0.8;">품목군별 최적 거래처 추천 (사전 계산된 데이터)</div>
+                    </div>
+                    <span class="icon">→</span>
+                </button>
+            </div>
+
+            <div id="statusMessage"></div>
+
+            <!-- 데이터 정보 표시 -->
+            <div id="dataInfo" class="data-info" style="display: none;">
+                <h4>📊 데이터 정보</h4>
+                <div id="dataDetails"></div>
+            </div>
+
+            <!-- 추천 결과 섹션 -->
+            <div id="resultsSection" class="results-section">
+                <div class="results-header">
+                    <div class="results-title">
+                        <span>🎯</span>
+                        <span id="selectedProductTitle">추천 결과</span>
+                    </div>
+                    <button onclick="showProductSelection()" 
+                            style="background: #6b7280; color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer;">
+                        품목군 변경
+                    </button>
+                </div>
+                <div id="recommendationsList"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 전역 변수
+        let recommendationsData = null;
+        let productGroupsData = null;
+
+        // 페이지 로드 시 데이터 로드
+        document.addEventListener('DOMContentLoaded', function() {
+            loadStaticData();
+        });
+
+        // 정적 JSON 데이터 로드
+        async function loadStaticData() {
+            showStatus('데이터 로딩 중...', 'warning');
+            
+            try {
+                // 동시에 두 파일 로드
+                const [recResponse, groupsResponse] = await Promise.all([
+                    fetch('recommendations_data.json'),
+                    fetch('product_groups.json')
+                ]);
+
+                if (!recResponse.ok || !groupsResponse.ok) {
+                    throw new Error('JSON 파일을 찾을 수 없습니다. 먼저 generate_all_recommendations.py를 실행해주세요.');
+                }
+
+                recommendationsData = await recResponse.json();
+                productGroupsData = await groupsResponse.json();
+
+                // 데이터 정보 표시
+                showDataInfo();
+                showStatus('데이터 로드 완료! 품목군을 선택해주세요.', 'success');
+
+            } catch (error) {
+                console.error('데이터 로드 오류:', error);
+                showStatus(`데이터 로드 실패: ${error.message}`, 'error');
+            }
+        }
+
+        // 데이터 정보 표시
+        function showDataInfo() {
+            const dataInfo = document.getElementById('dataInfo');
+            const dataDetails = document.getElementById('dataDetails');
+            
+            if (recommendationsData && productGroupsData) {
+                const summary = recommendationsData.data_summary;
+                dataDetails.innerHTML = `
+                    <div><strong>생성 시간:</strong> ${new Date(recommendationsData.generated_at).toLocaleString('ko-KR')}</div>
+                    <div><strong>엔진 버전:</strong> ${recommendationsData.engine_version}</div>
+                    <div><strong>품목군 수:</strong> ${recommendationsData.total_product_groups}개</div>
+                    <div><strong>총 거래처 수:</strong> ${summary.total_customers.toLocaleString()}개</div>
+                    <div><strong>총 품목 수:</strong> ${summary.total_products.toLocaleString()}개</div>
+                    <div><strong>데이터 기간:</strong> ${summary.date_range.from} ~ ${summary.date_range.to}</div>
+                `;
+                dataInfo.style.display = 'block';
+            }
+        }
+
+        // 상태 메시지 표시
+        function showStatus(message, type = 'warning') {
+            const statusDiv = document.getElementById('statusMessage');
+            statusDiv.className = `status-message status-${type}`;
+            statusDiv.textContent = message;
+            statusDiv.style.display = 'block';
+
+            if (type === 'success') {
+                setTimeout(() => {
+                    statusDiv.style.display = 'none';
+                }, 3000);
+            }
+        }
+
+        // 품목군 선택 다이얼로그 표시
+        function showProductSelection() {
+            if (!productGroupsData) {
+                showStatus('품목군 데이터가 로드되지 않았습니다.', 'error');
+                return;
+            }
+
+            const dialog = document.createElement('div');
+            dialog.className = 'dialog-overlay';
+            dialog.id = 'productSelectionDialog';
+            
+            // 품목군을 질환분류별로 그룹화
+            const groupedProducts = {};
+            productGroupsData.product_groups.forEach(product => {
+                const category = product.질환분류 || '기타';
+                if (!groupedProducts[category]) {
+                    groupedProducts[category] = [];
+                }
+                groupedProducts[category].push(product);
+            });
+
+            // 질환분류별로 정렬된 품목군 리스트 생성
+            let productListHTML = '';
+            Object.keys(groupedProducts).sort().forEach(category => {
+                productListHTML += `<div style="font-weight: bold; margin: 15px 0 10px 0; color: #4f46e5;">${category}</div>`;
+                groupedProducts[category].forEach(product => {
+                    productListHTML += `
+                        <div class="product-item" onclick="selectProduct('${product.품목군}')">
+                            <div>
+                                <div class="product-name">${product.품목군}</div>
+                                <div style="font-size: 0.8rem; color: #6b7280;">대표품목: ${product.대표품목}</div>
+                            </div>
+                            <div class="product-info">
+                                <div>매출: ${(product.총매출 / 100000000).toFixed(1)}억원</div>
+                                <div>고객: ${product.고객수}개</div>
+                                <div>품목: ${product.품목수}개</div>
+                            </div>
+                        </div>
+                    `;
+                });
+            });
+
+            dialog.innerHTML = `
+                <div class="dialog-content">
+                    <div class="dialog-header">
+                        <div class="dialog-title">품목군 선택</div>
+                        <div style="font-size: 0.9rem; color: #6b7280;">
+                            총 ${productGroupsData.total_count}개 품목군
+                        </div>
+                    </div>
+                    <div class="search-box">
+                        <input type="text" 
+                               class="search-input" 
+                               id="productSearchInput" 
+                               placeholder="품목군 검색..." 
+                               onkeyup="filterProducts()">
+                    </div>
+                    <div class="product-list" id="productList">
+                        ${productListHTML}
+                    </div>
+                    <div style="text-align: center; margin-top: 20px;">
+                        <button onclick="closeProductSelectionDialog()" 
+                                style="background: #6b7280; color: white; border: none; padding: 12px 24px; border-radius: 8px; cursor: pointer; font-size: 1rem;">
+                            취소
+                        </button>
+                    </div>
+                </div>
+            `;
+
+            document.body.appendChild(dialog);
+        }
+
+        // 품목군 검색 필터링
+        function filterProducts() {
+            const searchTerm = document.getElementById('productSearchInput').value.toLowerCase();
+            const productItems = document.querySelectorAll('.product-item');
+            
+            productItems.forEach(item => {
+                const productName = item.querySelector('.product-name').textContent.toLowerCase();
+                const representativeProduct = item.textContent.toLowerCase();
+                
+                if (productName.includes(searchTerm) || representativeProduct.includes(searchTerm)) {
+                    item.style.display = 'block';
+                } else {
+                    item.style.display = 'none';
+                }
+            });
+        }
+
+        // 품목군 선택
+        function selectProduct(productGroup) {
+            closeProductSelectionDialog();
+            generateRecommendations(productGroup);
+        }
+
+        // 다이얼로그 닫기
+        function closeProductSelectionDialog() {
+            const dialog = document.getElementById('productSelectionDialog');
+            if (dialog) {
+                dialog.remove();
+            }
+        }
+
+        // 추천 결과 생성 (정적 데이터에서 조회)
+        function generateRecommendations(productGroup) {
+            if (!recommendationsData) {
+                showStatus('추천 데이터가 로드되지 않았습니다.', 'error');
+                return;
+            }
+
+            const recommendations = recommendationsData.recommendations[productGroup];
+            const marketAnalysis = recommendationsData.market_analyses[productGroup];
+            const salesPlan = recommendationsData.sales_plans[productGroup];
+
+            if (!recommendations) {
+                showStatus(`'${productGroup}' 품목군의 추천 데이터를 찾을 수 없습니다.`, 'error');
+                return;
+            }
+
+            // 결과 표시
+            displayRecommendations(productGroup, recommendations, marketAnalysis, salesPlan);
+        }
+
+        // 추천 결과 표시
+        function displayRecommendations(productGroup, recommendations, marketAnalysis, salesPlan) {
+            document.getElementById('selectedProductTitle').textContent = `${productGroup} 추천 결과`;
+            
+            const recommendationsList = document.getElementById('recommendationsList');
+            
+            if (!recommendations || recommendations.length === 0) {
+                recommendationsList.innerHTML = `
+                    <div style="text-align: center; padding: 40px; color: #6b7280;">
+                        <div style="font-size: 3rem; margin-bottom: 15px;">🤔</div>
+                        <div style="font-size: 1.2rem; margin-bottom: 10px;">추천 결과가 없습니다</div>
+                        <div>다른 품목군을 선택해보세요.</div>
+                    </div>
+                `;
+            } else {
+                let html = '';
+                
+                // 시장 분석 정보 표시
+                if (marketAnalysis) {
+                    html += `
+                        <div class="recommendation-card" style="border-left-color: #059669; margin-bottom: 25px;">
+                            <div style="font-size: 1.1rem; font-weight: 600; color: #059669; margin-bottom: 15px;">
+                                📊 ${productGroup} 시장 분석
+                            </div>
+                            <div class="card-details">
+                                <div class="detail-item">
+                                    <span class="detail-label">질환분류:</span>
+                                    <span class="detail-value">${marketAnalysis.질환분류}</span>
+                                </div>
+                                <div class="detail-item">
+                                    <span class="detail-label">현재 고객수:</span>
+                                    <span class="detail-value">${marketAnalysis.현재고객수}개</span>
+                                </div>
+                                <div class="detail-item">
+                                    <span class="detail-label">현재 침투율:</span>
+                                    <span class="detail-value">${marketAnalysis.현재침투율}%</span>
+                                </div>
+                                <div class="detail-item">
+                                    <span class="detail-label">성장 가능 고객:</span>
+                                    <span class="detail-value">${marketAnalysis.성장가능고객수}개</span>
+                                </div>
+                                <div class="detail-item">
+                                    <span class="detail-label">현재 매출:</span>
+                                    <span class="detail-value">${(marketAnalysis.현재매출 / 100000000).toFixed(1)}억원</span>
+                                </div>
+                                <div class="detail-item">
+                                    <span class="detail-label">최근 성장률:</span>
+                                    <span class="detail-value">${marketAnalysis.최근성장률}%</span>
+                                </div>
+                            </div>
+                            <div class="recommendation-reason">
+                                <strong>추천 전략:</strong> ${marketAnalysis.추천전략}
+                            </div>
+                        </div>
+                    `;
+                }
+
+                // 추천 거래처 목록
+                recommendations.forEach((rec, index) => {
+                    html += `
+                        <div class="recommendation-card">
+                            <div class="card-header">
+                                <div>
+                                    <div class="customer-name">${index + 1}. ${rec.거래처명}</div>
+                                    <div class="customer-info">
+                                        ${rec.진료과 || 'Unknown'} | ${rec.시설유형 || 'Unknown'} | ${rec.거래처규모 || 'Unknown'}
+                                    </div>
+                                </div>
+                                <div class="scores">
+                                    <div class="score-item">
+                                        <span class="score-label">예상매출:</span>
+                                        <span class="score-value expected-sales">${(rec.예상매출 / 1000000).toFixed(1)}M원</span>
+                                    </div>
+                                    <div class="score-item">
+                                        <span class="score-label">성공확률:</span>
+                                        <span class="score-value success-rate">${rec.성공확률}%</span>
+                                    </div>
+                                    <div class="score-item">
+                                        <span class="score-label">유사도:</span>
+                                        <span class="score-value similarity-score">${rec.유사도점수}</span>
+                                    </div>
+                                    <div class="score-item">
+                                        <span class="score-label">진료과매칭:</span>
+                                        <span class="score-value specialty-score">${rec.진료과매칭점수}</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="recommendation-reason">
+                                <strong>추천 이유:</strong> ${rec.추천이유}
+                            </div>
+                        </div>
+                    `;
+                });
+            }
+            
+            recommendationsList.innerHTML = html;
+            document.getElementById('resultsSection').style.display = 'block';
+            
+            // 결과 섹션으로 스크롤
+            document.getElementById('resultsSection').scrollIntoView({ 
+                behavior: 'smooth',
+                block: 'start'
+            });
+
+            showStatus(`${productGroup} 추천 완료! ${recommendations.length}개 거래처를 찾았습니다.`, 'success');
+        }
+
+        // ESC 키로 다이얼로그 닫기
+        document.addEventListener('keydown', function(event) {
+            if (event.key === 'Escape') {
+                closeProductSelectionDialog();
+            }
+        });
+    </script>
+</body>
+</html> 
