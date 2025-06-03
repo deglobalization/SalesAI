@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>생애주기 기반 AI 코멘트 테스트</title>
+    <style>
+        body {
+            font-family: 'Noto Sans KR', sans-serif;
+            background: #111827;
+            color: #e5e7eb;
+            padding: 20px;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: rgba(17, 24, 39, 0.8);
+            padding: 20px;
+            border-radius: 12px;
+            border: 1px solid rgba(75, 85, 99, 0.3);
+        }
+        .customer-item {
+            background: rgba(31, 41, 55, 0.8);
+            border: 1px solid rgba(75, 85, 99, 0.3);
+            border-radius: 8px;
+            padding: 15px;
+            margin: 10px 0;
+        }
+        .customer-name {
+            color: #00d4ff;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+        .customer-data {
+            color: #9ca3af;
+            font-size: 0.9rem;
+            margin-bottom: 10px;
+        }
+        .ai-comment {
+            background: rgba(34, 197, 94, 0.1);
+            border-left: 3px solid #10b981;
+            padding: 10px;
+            color: #10b981;
+            font-weight: 500;
+        }
+        button {
+            background: #10b981;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            margin: 10px 5px;
+        }
+        button:hover {
+            background: #059669;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔬 생애주기 기반 AI 코멘트 테스트</h1>
+        <p>고객 세분화의 AI 코멘트가 생애주기적 관점에서 평가되는지 확인해보세요.</p>
+        
+        <button onclick="generateTestComments()">🤖 생애주기 기반 코멘트 생성</button>
+        <button onclick="generateBasicComments()">📊 기존 방식 코멘트 생성</button>
+        <button onclick="generateEnhancedComments()">⚡ 향상된 기존 방식 코멘트 생성</button>
+        <button onclick="compareAllMethods()">🔍 모든 방식 비교</button>
+        
+        <div id="testResults"></div>
+    </div>
+    
+    <script src="segment_ai_comments.js"></script>
+    <script>
+        // 테스트용 고객 데이터
+        const testCustomers = [
+            {
+                accountName: "성장병원",
+                recentMonthSales: 5000000,
+                growthVs3Month: 2000000,
+                growthVsYearAgo: 1500000,
+                totalSales: 30000000,
+                uniqueProducts: 3
+            },
+            {
+                accountName: "안정클리닉",
+                recentMonthSales: 80000000,
+                growthVs3Month: 3000000,
+                growthVsYearAgo: 5000000,
+                totalSales: 800000000,
+                uniqueProducts: 8
+            },
+            {
+                accountName: "쇠퇴병원",
+                recentMonthSales: 40000000,
+                growthVs3Month: -8000000,
+                growthVsYearAgo: -15000000,
+                totalSales: 600000000,
+                uniqueProducts: 5
+            },
+            {
+                accountName: "신규병원",
+                recentMonthSales: 3000000,
+                growthVs3Month: 1500000,
+                growthVsYearAgo: 0,
+                totalSales: 15000000,
+                uniqueProducts: 2
+            },
+            {
+                accountName: "재활성화병원",
+                recentMonthSales: 25000000,
+                growthVs3Month: 8000000,
+                growthVsYearAgo: -2000000,
+                totalSales: 200000000,
+                uniqueProducts: 4
+            }
+        ];
+        
+        function generateTestComments() {
+            const resultsDiv = document.getElementById('testResults');
+            let html = '<h2>🔬 생애주기 기반 AI 코멘트 결과</h2>';
+            
+            testCustomers.forEach((customer, index) => {
+                // 생애주기 기반 코멘트 생성
+                const lifecycleComment = generateLifecycleBasedComment(customer, 'sales', 'high');
+                
+                html += `
+                    <div class="customer-item">
+                        <div class="customer-name">${customer.accountName}</div>
+                        <div class="customer-data">
+                            최근월 매출: ${(customer.recentMonthSales / 10000).toLocaleString()}만원 | 
+                            3개월 성장: ${(customer.growthVs3Month / 10000).toLocaleString()}만원 | 
+                            1년 성장: ${(customer.growthVsYearAgo / 10000).toLocaleString()}만원
+                        </div>
+                        <div class="ai-comment">
+                            🤖 생애주기 AI: ${lifecycleComment}
+                        </div>
+                    </div>
+                `;
+            });
+            
+            resultsDiv.innerHTML = html;
+        }
+        
+        function generateBasicComments() {
+            const resultsDiv = document.getElementById('testResults');
+            let html = '<h2>📊 기존 방식 코멘트 결과</h2>';
+            
+            testCustomers.forEach((customer, index) => {
+                // 기존 방식 코멘트 생성
+                const recentSales = customer.recentMonthSales || 0;
+                let basicComment = "";
+                if (recentSales > 100000000) {
+                    basicComment = "💼 VIP 고객, 전담 관리 필요";
+                } else if (recentSales > 50000000) {
+                    basicComment = "⭐ 중요 고객, 관계 강화 필요";
+                } else if (recentSales > 10000000) {
+                    basicComment = "📊 성장 잠재력 평가 필요";
+                } else {
+                    basicComment = "🌱 신규 기회 개발 검토";
+                }
+                
+                html += `
+                    <div class="customer-item">
+                        <div class="customer-name">${customer.accountName}</div>
+                        <div class="customer-data">
+                            최근월 매출: ${(customer.recentMonthSales / 10000).toLocaleString()}만원 | 
+                            3개월 성장: ${(customer.growthVs3Month / 10000).toLocaleString()}만원 | 
+                            1년 성장: ${(customer.growthVsYearAgo / 10000).toLocaleString()}만원
+                        </div>
+                        <div class="ai-comment">
+                            📊 기존 방식: ${basicComment}
+                        </div>
+                    </div>
+                `;
+            });
+            
+            resultsDiv.innerHTML = html;
+        }
+        
+        function generateEnhancedComments() {
+            const resultsDiv = document.getElementById('testResults');
+            let html = '<h2>⚡ 향상된 기존 방식 코멘트 결과</h2>';
+            
+            testCustomers.forEach((customer, index) => {
+                // 향상된 기존 방식 코멘트 생성 (SalesAI-main 19 방식)
+                const enhancedComment = generateEnhancedFallbackComment(customer, 'sales', 'high');
+                
+                html += `
+                    <div class="customer-item">
+                        <div class="customer-name">${customer.accountName}</div>
+                        <div class="customer-data">
+                            최근월 매출: ${(customer.recentMonthSales / 10000).toLocaleString()}만원 | 
+                            3개월 성장: ${(customer.growthVs3Month / 10000).toLocaleString()}만원 | 
+                            1년 성장: ${(customer.growthVsYearAgo / 10000).toLocaleString()}만원
+                        </div>
+                        <div class="ai-comment">
+                            ⚡ 향상된 기존 방식: ${enhancedComment}
+                        </div>
+                    </div>
+                `;
+            });
+            
+            resultsDiv.innerHTML = html;
+        }
+        
+        function compareAllMethods() {
+            const resultsDiv = document.getElementById('testResults');
+            let html = '<h2>🔍 모든 방식 비교</h2>';
+            
+            testCustomers.forEach((customer, index) => {
+                // 생애주기 기반 코멘트 생성
+                const lifecycleComment = generateLifecycleBasedComment(customer, 'sales', 'high');
+                
+                // 향상된 기존 방식 코멘트 생성 (SalesAI-main 19 방식)
+                const enhancedComment = generateEnhancedFallbackComment(customer, 'sales', 'high');
+                
+                // 기본 기존 방식 코멘트 생성
+                const recentSales = customer.recentMonthSales || 0;
+                let basicComment = "";
+                if (recentSales > 100000000) {
+                    basicComment = "💼 VIP 고객, 전담 관리 필요";
+                } else if (recentSales > 50000000) {
+                    basicComment = "⭐ 중요 고객, 관계 강화 필요";
+                } else if (recentSales > 10000000) {
+                    basicComment = "📊 성장 잠재력 평가 필요";
+                } else {
+                    basicComment = "🌱 신규 기회 개발 검토";
+                }
+                
+                html += `
+                    <div class="customer-item">
+                        <div class="customer-name">${customer.accountName}</div>
+                        <div class="customer-data">
+                            최근월 매출: ${(customer.recentMonthSales / 10000).toLocaleString()}만원 | 
+                            3개월 성장: ${(customer.growthVs3Month / 10000).toLocaleString()}만원 | 
+                            1년 성장: ${(customer.growthVsYearAgo / 10000).toLocaleString()}만원
+                        </div>
+                        <div class="ai-comment">
+                            🤖 생애주기 AI: ${lifecycleComment}
+                        </div>
+                        <div class="ai-comment">
+                            ⚡ 향상된 기존: ${enhancedComment}
+                        </div>
+                        <div class="ai-comment">
+                            📊 기본 기존: ${basicComment}
+                        </div>
+                    </div>
+                `;
+            });
+            
+            resultsDiv.innerHTML = html;
+        }
+        
+        // 페이지 로드 시 자동으로 생애주기 기반 코멘트 생성
+        window.onload = function() {
+            generateTestComments();
+        };
+    </script>
+</body>
+</html> 

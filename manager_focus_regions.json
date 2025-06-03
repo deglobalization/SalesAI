@@ -1,0 +1,166 @@
+{
+  "updated_at": "2025-01-27T00:00:00.000000",
+  "description": "담당자별 지역 포커스 설정 파일",
+  "version": "1.0.0",
+  "manager_focus_regions": {
+    "이인철": {
+      "primary_region": "구리",
+      "region_code": "경기/인천2지역",
+      "focus_type": "city",
+      "coordinates": {
+        "lat": 37.5943,
+        "lng": 127.1295
+      },
+      "bounds": [[37.63, 127.09], [37.55, 127.17]],
+      "description": "구리시 전체 지역 담당"
+    },
+    "김병민": {
+      "primary_region": "하남",
+      "region_code": "경기남부권역",
+      "focus_type": "city",
+      "coordinates": {
+        "lat": 37.5394,
+        "lng": 127.2145
+      },
+      "bounds": [[37.58, 127.18], [37.50, 127.25]],
+      "description": "하남시 전체 지역 담당"
+    },
+    "이지형": {
+      "primary_region": "하남",
+      "region_code": "경기남부권역",
+      "focus_type": "city",
+      "coordinates": {
+        "lat": 37.5394,
+        "lng": 127.2145
+      },
+      "bounds": [[37.58, 127.18], [37.50, 127.25]],
+      "description": "하남시 전체 지역 담당"
+    },
+    "김서연": {
+      "primary_region": "광주",
+      "region_code": "경기남부권역",
+      "focus_type": "city",
+      "parent": "경기도",
+      "coordinates": {
+        "lat": 37.4138,
+        "lng": 127.2553
+      },
+      "bounds": [[37.45, 127.22], [37.37, 127.29]],
+      "description": "경기도 광주시 전체 지역 담당"
+    },
+    "김관태": {
+      "primary_region": "광주",
+      "region_code": "경기남부권역",
+      "focus_type": "city",
+      "parent": "경기도",
+      "coordinates": {
+        "lat": 37.4138,
+        "lng": 127.2553
+      },
+      "bounds": [[37.45, 127.22], [37.37, 127.29]],
+      "description": "경기도 광주시 전체 지역 담당"
+    },
+    "김인용": {
+      "primary_region": "용인",
+      "region_code": "경기남부권역",
+      "focus_type": "city",
+      "parent": "경기도",
+      "coordinates": {
+        "lat": 37.2411,
+        "lng": 127.1776
+      },
+      "bounds": [[37.30, 127.11], [37.18, 127.25]],
+      "description": "경기도 용인시 전체 지역 담당"
+    },
+    "박경현": {
+      "primary_region": "용인",
+      "region_code": "경기남부권역",
+      "focus_type": "city",
+      "parent": "경기도",
+      "coordinates": {
+        "lat": 37.2411,
+        "lng": 127.1776
+      },
+      "bounds": [[37.30, 127.11], [37.18, 127.25]],
+      "description": "경기도 용인시 전체 지역 담당"
+    },
+    "이한솔B": {
+      "primary_region": "용인",
+      "region_code": "경기남부권역",
+      "focus_type": "city",
+      "parent": "경기도",
+      "coordinates": {
+        "lat": 37.2411,
+        "lng": 127.1776
+      },
+      "bounds": [[37.30, 127.11], [37.18, 127.25]],
+      "description": "경기도 용인시 전체 지역 담당"
+    },
+    "이창준A": {
+      "primary_region": "용인",
+      "region_code": "경기남부권역",
+      "focus_type": "city",
+      "parent": "경기도",
+      "coordinates": {
+        "lat": 37.2411,
+        "lng": 127.1776
+      },
+      "bounds": [[37.30, 127.11], [37.18, 127.25]],
+      "description": "경기도 용인시 전체 지역 담당"
+    },
+    "이희영": {
+      "primary_region": "용인",
+      "region_code": "경기남부권역",
+      "focus_type": "city",
+      "parent": "경기도",
+      "coordinates": {
+        "lat": 37.2411,
+        "lng": 127.1776
+      },
+      "bounds": [[37.30, 127.11], [37.18, 127.25]],
+      "description": "경기도 용인시 전체 지역 담당"
+    }
+  },
+  "region_definitions": {
+    "구리": {
+      "full_name": "구리시",
+      "parent": "경기도",
+      "type": "시",
+      "coordinates": {
+        "lat": 37.5943,
+        "lng": 127.1295
+      },
+      "bounds": [[37.63, 127.09], [37.55, 127.17]]
+    },
+    "하남": {
+      "full_name": "하남시",
+      "parent": "경기도", 
+      "type": "시",
+      "coordinates": {
+        "lat": 37.5394,
+        "lng": 127.2145
+      },
+      "bounds": [[37.58, 127.18], [37.50, 127.25]]
+    },
+    "광주": {
+      "full_name": "광주시",
+      "parent": "경기도",
+      "type": "시",
+      "coordinates": {
+        "lat": 37.4138,
+        "lng": 127.2553
+      },
+      "bounds": [[37.45, 127.22], [37.37, 127.29]]
+    },
+    "용인": {
+      "full_name": "용인시",
+      "parent": "경기도",
+      "type": "시",
+      "coordinates": {
+        "lat": 37.2411,
+        "lng": 127.1776
+      },
+      "bounds": [[37.30, 127.11], [37.18, 127.25]]
+    }
+  }
+} 

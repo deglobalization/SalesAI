@@ -1,0 +1,627 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SalesAI - 담당자 선택</title>
+    <link rel="stylesheet" href="mobile-optimization.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: #0a0b0d;
+            color: #ffffff;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        .background-pattern {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            opacity: 0.03;
+            background-image: 
+              radial-gradient(circle at 20% 50%, #00d4ff 0%, transparent 50%),
+              radial-gradient(circle at 80% 20%, #ff6b35 0%, transparent 50%),
+              radial-gradient(circle at 40% 80%, #7c3aed 0%, transparent 50%);
+            pointer-events: none;
+            z-index: -1;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 40px 20px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 50px;
+        }
+
+        .header h1 {
+            font-size: 3.5rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, #00d4ff, #7c3aed);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 20px;
+            letter-spacing: -0.02em;
+        }
+
+        .header p {
+            font-size: 1.3rem;
+            color: #a1a1aa;
+            font-weight: 400;
+            margin-bottom: 30px;
+        }
+
+        .subtitle {
+            font-size: 1.1rem;
+            color: #00d4ff;
+            font-weight: 600;
+            margin-bottom: 40px;
+        }
+
+        .manager-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 25px;
+            margin-bottom: 40px;
+        }
+
+        .manager-card {
+            background: rgba(17, 24, 39, 0.8);
+            border-radius: 20px;
+            padding: 30px;
+            border: 1px solid rgba(75, 85, 99, 0.3);
+            backdrop-filter: blur(20px);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+            transition: all 0.3s ease;
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .manager-card:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.5);
+            border-color: #00d4ff;
+        }
+
+        .manager-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(135deg, rgba(0, 212, 255, 0.1), rgba(124, 58, 237, 0.1));
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .manager-card:hover::before {
+            opacity: 1;
+        }
+
+        .manager-icon {
+            font-size: 3rem;
+            margin-bottom: 20px;
+            display: block;
+            position: relative;
+            z-index: 2;
+        }
+
+        .manager-name {
+            font-size: 1.4rem;
+            font-weight: 700;
+            color: #ffffff;
+            margin-bottom: 10px;
+            position: relative;
+            z-index: 2;
+        }
+
+        .manager-info {
+            color: #9ca3af;
+            font-size: 0.95rem;
+            line-height: 1.6;
+            margin-bottom: 15px;
+            position: relative;
+            z-index: 2;
+        }
+
+        .manager-stats {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 20px;
+            padding-top: 15px;
+            border-top: 1px solid rgba(75, 85, 99, 0.3);
+            position: relative;
+            z-index: 2;
+        }
+
+        .stat-item {
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: #00d4ff;
+            margin-bottom: 3px;
+        }
+
+        .stat-label {
+            font-size: 0.8rem;
+            color: #9ca3af;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            margin-top: 30px;
+        }
+
+        .btn {
+            padding: 14px 28px;
+            border-radius: 12px;
+            font-weight: 600;
+            font-size: 1rem;
+            border: none;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #00d4ff, #0ea5e9);
+            color: white;
+        }
+
+        .btn-secondary {
+            background: rgba(75, 85, 99, 0.8);
+            color: #ffffff;
+            border: 1px solid rgba(75, 85, 99, 0.5);
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.3);
+        }
+
+        .btn-secondary:hover {
+            background: rgba(99, 102, 241, 0.8);
+            transform: translateY(-2px);
+        }
+
+        /* 로딩 오버레이 스타일 */
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+            backdrop-filter: blur(10px);
+        }
+
+        .loading-content {
+            text-align: center;
+            color: white;
+        }
+
+        .loading-spinner {
+            width: 50px;
+            height: 50px;
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            border-top: 3px solid #00d4ff;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        #loadingText {
+            font-size: 1.1rem;
+            color: #ffffff;
+            margin-top: 15px;
+        }
+
+        /* 상태 메시지 스타일 */
+        .status-message {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            padding: 15px 25px;
+            border-radius: 10px;
+            font-weight: 600;
+            z-index: 10000;
+            max-width: 90%;
+            text-align: center;
+        }
+
+        .status-success {
+            background: rgba(16, 185, 129, 0.9);
+            color: white;
+            border: 1px solid rgba(16, 185, 129, 0.5);
+        }
+
+        .status-info {
+            background: rgba(59, 130, 246, 0.9);
+            color: white;
+            border: 1px solid rgba(59, 130, 246, 0.5);
+        }
+
+        .status-warning {
+            background: rgba(245, 158, 11, 0.9);
+            color: white;
+            border: 1px solid rgba(245, 158, 11, 0.5);
+        }
+
+        .status-error {
+            background: rgba(239, 68, 68, 0.9);
+            color: white;
+            border: 1px solid rgba(239, 68, 68, 0.5);
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 20px 15px;
+            }
+            
+            .header h1 {
+                font-size: 2.5rem;
+            }
+            
+            .header p {
+                font-size: 1.1rem;
+            }
+            
+            .manager-grid {
+                grid-template-columns: 1fr;
+                gap: 20px;
+            }
+            
+            .manager-card {
+                padding: 25px;
+            }
+            
+            .action-buttons {
+                flex-direction: column;
+                align-items: center;
+            }
+            
+            .btn {
+                width: 100%;
+                max-width: 300px;
+                justify-content: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="background-pattern"></div>
+    
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="loading-content">
+            <div class="loading-spinner"></div>
+            <div id="loadingText">담당자 데이터를 로딩 중입니다...</div>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="header">
+            <h1>🎯 SalesAI</h1>
+            <p>데이터 기반 영업 분석 및 추천 시스템</p>
+            <div class="subtitle">담당자를 선택하여 분석을 시작하세요</div>
+        </div>
+
+        <div class="manager-grid" id="managerGrid">
+            <!-- 담당자 카드들이 여기에 동적으로 생성됩니다 -->
+        </div>
+
+        <div class="action-buttons">
+            <button class="btn btn-primary" onclick="showAllManagersAnalysis()">
+                📊 전체 담당자 통합 분석
+            </button>
+            <a href="advisor.html" class="btn btn-secondary">
+                🔧 고급 분석 도구
+            </a>
+        </div>
+
+        <div id="statusMessage" class="status-message" style="display: none;"></div>
+    </div>
+
+    <script>
+        // 담당자 정보 (가나다 순서로 정렬, 실제 데이터 기반)
+        const managers = [
+            {
+                name: '김관태',
+                area: '경기 광주시',
+                accounts: 64,
+                products: 265,
+                recentSales: 1.4,
+                empNo: '221017',
+                joinYear: 2022,
+                experience: 3,
+                icon: '👨‍💼',
+                color: '#06b6d4'
+            },
+            {
+                name: '김병민',
+                area: '경기 하남시',
+                accounts: 71,
+                products: 262,
+                recentSales: 1.8,
+                empNo: '214221',
+                joinYear: 2014,
+                experience: 11,
+                icon: '👨‍💼',
+                color: '#00d4ff'
+            },
+            {
+                name: '김서연',
+                area: '경기 광주시',
+                accounts: 55,
+                products: 272,
+                recentSales: 1.4,
+                empNo: '217198',
+                joinYear: 2017,
+                experience: 8,
+                icon: '👩‍💼',
+                color: '#8b5cf6'
+            },
+            {
+                name: '김인용',
+                area: '경기 용인시',
+                accounts: 55,
+                products: 278,
+                recentSales: 1.4,
+                empNo: '218003',
+                joinYear: 2018,
+                experience: 7,
+                icon: '👨‍💼',
+                color: '#ef4444'
+            },
+            {
+                name: '박경현',
+                area: '경기 용인시',
+                accounts: 49,
+                products: 266,
+                recentSales: 1.7,
+                empNo: '218352',
+                joinYear: 2018,
+                experience: 7,
+                icon: '👨‍💼',
+                color: '#10b981'
+            },
+            {
+                name: '이인철',
+                area: '경기 구리시',
+                accounts: 38,
+                products: 254,
+                recentSales: 1.7,
+                empNo: '212127',
+                joinYear: 2012,
+                experience: 13,
+                icon: '👨‍💼',
+                color: '#7c3aed'
+            },
+            {
+                name: '이지형',
+                area: '경기 하남시',
+                accounts: 54,
+                products: 272,
+                recentSales: 1.3,
+                empNo: '217380',
+                joinYear: 2017,
+                experience: 8,
+                icon: '👨‍💼',
+                color: '#84cc16'
+            },
+            {
+                name: '이창준A',
+                area: '경기 용인시',
+                accounts: 75,
+                products: 233,
+                recentSales: 1.1,
+                empNo: '218212',
+                joinYear: 2018,
+                experience: 7,
+                icon: '👨‍💼',
+                color: '#ec4899'
+            },
+            {
+                name: '이한솔B',
+                area: '경기 용인시',
+                accounts: 67,
+                products: 266,
+                recentSales: 1.0,
+                empNo: '223235',
+                joinYear: 2022,
+                experience: 3,
+                icon: '👩‍💼',
+                color: '#6366f1'
+            },
+            {
+                name: '이희영',
+                area: '경기 용인시',
+                accounts: 54,
+                products: 249,
+                recentSales: 1.4,
+                empNo: '217320',
+                joinYear: 2017,
+                experience: 8,
+                icon: '👨‍💼',
+                color: '#f59e0b'
+            }
+        ];
+
+        // 중복 클릭 방지 플래그
+        let isNavigating = false;
+
+        // 페이지 로드 시 담당자 카드 생성
+        function loadManagerCards() {
+            const managerGrid = document.getElementById('managerGrid');
+            managerGrid.innerHTML = '';
+
+            managers.forEach(manager => {
+                const card = document.createElement('div');
+                card.className = 'manager-card';
+                card.onclick = () => {
+                    if (!isNavigating) {
+                        selectManager(manager.name);
+                    }
+                };
+                
+                card.innerHTML = `
+                    <div class="manager-icon">${manager.icon}</div>
+                    <div class="manager-name">${manager.name}</div>
+                    <div class="manager-info">
+                        담당 지역: ${manager.area}<br>
+                        경력: ${manager.experience}년
+                    </div>
+                    <div class="manager-stats">
+                        <div class="stat-item">
+                            <div class="stat-value">${manager.accounts}</div>
+                            <div class="stat-label">거래처</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-value">${manager.products}</div>
+                            <div class="stat-label">품목군</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-value">${manager.recentSales}</div>
+                            <div class="stat-label">억원/월</div>
+                        </div>
+                    </div>
+                `;
+                
+                managerGrid.appendChild(card);
+            });
+        }
+
+        // 담당자 선택 함수
+        function selectManager(managerName) {
+            if (isNavigating) {
+                console.log('이미 이동 중입니다.');
+                return;
+            }
+            
+            isNavigating = true;
+            console.log('담당자 선택:', managerName);
+            
+            showLoading(true);
+            updateLoadingText(`${managerName} 담당자 데이터를 준비 중입니다...`);
+            
+            // 선택된 담당자 저장
+            localStorage.setItem('selectedManager', managerName);
+            console.log('담당자 로컬스토리지 저장 완료:', localStorage.getItem('selectedManager'));
+            
+            // 상태 메시지 표시
+            showStatus(`${managerName} 담당자가 선택되었습니다. 분석 페이지로 이동합니다...`, 'success');
+            
+            // 1초 후 advisor.html로 이동 (URL 파라미터 포함)
+            const targetUrl = `advisor.html?manager=${encodeURIComponent(managerName)}`;
+            console.log('이동할 URL:', targetUrl);
+            
+            setTimeout(() => {
+                console.log('페이지 이동 시작...');
+                window.location.href = targetUrl;
+            }, 1000);
+        }
+
+        // 전체 담당자 통합 분석
+        function showAllManagersAnalysis() {
+            console.log('전체 담당자 분석 시작');
+            
+            showLoading(true);
+            updateLoadingText('전체 담당자 통합 분석을 준비 중입니다...');
+            
+            // 전체 분석 모드로 설정
+            localStorage.removeItem('selectedManager');
+            console.log('선택된 담당자 초기화 완료');
+            
+            showStatus('전체 담당자 통합 분석 모드로 이동합니다...', 'info');
+            
+            setTimeout(() => {
+                console.log('advisor.html로 이동...');
+                window.location.href = 'advisor.html';
+            }, 1000);
+        }
+
+        // 로딩 오버레이 표시/숨김
+        function showLoading(show) {
+            const loadingOverlay = document.getElementById('loadingOverlay');
+            loadingOverlay.style.display = show ? 'flex' : 'none';
+        }
+
+        // 로딩 텍스트 업데이트
+        function updateLoadingText(text) {
+            document.getElementById('loadingText').textContent = text;
+        }
+
+        // 상태 메시지 표시
+        function showStatus(message, type = 'info') {
+            const statusElement = document.getElementById('statusMessage');
+            statusElement.textContent = message;
+            statusElement.className = `status-message status-${type}`;
+            statusElement.style.display = 'block';
+            
+            // 5초 후 자동 숨김
+            setTimeout(() => {
+                statusElement.style.display = 'none';
+            }, 5000);
+        }
+
+        // 키보드 단축키
+        document.addEventListener('keydown', function(event) {
+            // 숫자 키 1-5로 담당자 선택
+            if (event.key >= '1' && event.key <= '5') {
+                const index = parseInt(event.key) - 1;
+                if (index < managers.length) {
+                    selectManager(managers[index].name);
+                }
+            }
+            // Enter 키로 전체 분석
+            else if (event.key === 'Enter') {
+                showAllManagersAnalysis();
+            }
+        });
+
+        // 페이지 로드 시 초기화
+        document.addEventListener('DOMContentLoaded', function() {
+            loadManagerCards();
+            
+            // 환영 메시지
+            setTimeout(() => {
+                showStatus('담당자를 선택하거나 키보드 숫자 키(1-5)를 사용하세요. Enter 키로 전체 분석이 가능합니다.', 'info');
+            }, 1000);
+        });
+    </script>
+</body>
+</html> 

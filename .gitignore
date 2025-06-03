@@ -1,0 +1,36 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.pyc
+venv/
+env/
+
+# 큰 CSV 파일들 (GitHub 100MB 제한)
+*.csv
+manager_data/*.csv
+SalesAI-main*/
+
+# 로그 파일
+*.log
+
+# 임시 파일
+*.tmp
+*.temp
+
+# OS 생성 파일
+.DS_Store
+Thumbs.db
+
+# IDE 파일
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Node modules (필요 시)
+node_modules/
+
+# 빌드 결과물
+dist/
+build/

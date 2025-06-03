@@ -1,0 +1,14 @@
+{
+    "status": "ok",
+    "server": "GitHub Pages",
+    "timestamp": "2024-12-19T00:00:00Z",
+    "message": "SalesAI running on GitHub Pages",
+    "environment": "production",
+    "features": {
+        "data_visualization": true,
+        "manager_selection": true,
+        "map_focusing": true,
+        "ai_recommendations": false,
+        "csv_upload": false
+    }
+} 
