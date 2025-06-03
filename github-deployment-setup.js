@@ -7,14 +7,38 @@ const originalFetch = window.fetch;
 function convertToStaticPaths() {
     // advisor.html에서 API 호출을 정적 파일 경로로 변경
     const apiMappings = {
+        // 상대 경로 API
         '/api/products': './product_groups.json',
         '/api/managers': './manager_list.json', 
         '/api/recommendations': './recommendations_data.json',
         '/api/manager-recommendations': './manager_recommendations_data.json',
         '/api/manager-focus': './manager_focus_regions.json',
         '/api/summary': './total_managers_summary.json',
-        '/api/health': './health.json' // 더미 헬스체크 파일
+        '/api/health': './health.json',
+        '/api/recommend': './recommendations_data.json',
+        
+        // localhost 절대 경로 API
+        'http://localhost:8080/api/products': './product_groups.json',
+        'http://localhost:8080/api/managers': './manager_list.json',
+        'http://localhost:8080/api/recommendations': './recommendations_data.json',
+        'http://localhost:8080/api/manager-recommendations': './manager_recommendations_data.json',
+        'http://localhost:8080/api/manager-focus': './manager_focus_regions.json',
+        'http://localhost:8080/api/summary': './total_managers_summary.json',
+        'http://localhost:8080/api/health': './health.json',
+        'http://localhost:8080/api/recommend': './recommendations_data.json',
+        
+        // CSV 파일들을 JSON으로 리다이렉트 (GitHub Pages에서 CSV 제한 때문)
+        './rx-rawdata.csv': './manager_recommendations_data.json',
+        'rx-rawdata.csv': './manager_recommendations_data.json'
     };
+    
+    // 담당자별 CSV 파일 매핑 추가
+    const managerNames = ['김관태', '김병민', '김서연', '김인용', '박경현', '이인철', '이지형', '이창준A', '이한솔B', '이희영'];
+    managerNames.forEach(name => {
+        const encodedName = encodeURIComponent(name);
+        apiMappings[`manager_data/manager_${encodedName}.csv`] = './manager_recommendations_data.json';
+        apiMappings[`./manager_data/manager_${encodedName}.csv`] = './manager_recommendations_data.json';
+    });
     
     return apiMappings;
 }
@@ -40,6 +64,20 @@ function createHealthCheck() {
     };
 }
 
+// URL 정규화 함수
+function normalizeUrl(url) {
+    if (typeof url !== 'string') return url;
+    
+    // 쿼리 파라미터와 fragment 제거하여 깔끔한 매핑
+    try {
+        const urlObj = new URL(url, window.location.href);
+        return urlObj.pathname;
+    } catch (error) {
+        // URL 파싱 실패 시 원본 반환
+        return url;
+    }
+}
+
 // 정적 파일용 fetch 함수 (재귀 방지)
 let isStaticFetchActive = false;
 
@@ -55,12 +93,55 @@ async function staticFetch(url, options = {}) {
         
         if (isGitHubPages()) {
             const apiMappings = convertToStaticPaths();
-            const staticPath = apiMappings[url] || url;
+            let staticPath = null;
+            
+            // 디버깅: 모든 매핑 확인
+            console.log(`🔍 매핑 대상 URL: "${url}"`);
+            console.log(`🔍 URL 타입: ${typeof url}`);
+            
+            // 1단계: 정확한 URL 매칭
+            if (apiMappings[url]) {
+                staticPath = apiMappings[url];
+                console.log(`✅ 1단계 정확 매칭: "${url}" → "${staticPath}"`);
+            }
+            
+            // 2단계: URL 정규화 매칭  
+            if (!staticPath) {
+                const normalizedUrl = normalizeUrl(url);
+                if (apiMappings[normalizedUrl]) {
+                    staticPath = apiMappings[normalizedUrl];
+                    console.log(`✅ 2단계 정규화 매칭: "${normalizedUrl}" → "${staticPath}"`);
+                }
+            }
+            
+            // 3단계: 패턴 매칭 (localhost API 호출들)
+            if (!staticPath && typeof url === 'string') {
+                if (url.includes('localhost:8080/api/products')) {
+                    staticPath = './product_groups.json';
+                    console.log(`✅ 3단계 패턴 매칭: products API → "${staticPath}"`);
+                } else if (url.includes('localhost:8080/api/recommend')) {
+                    staticPath = './recommendations_data.json';
+                    console.log(`✅ 3단계 패턴 매칭: recommend API → "${staticPath}"`);
+                } else if (url.includes('localhost:8080/api/managers')) {
+                    staticPath = './manager_list.json';
+                    console.log(`✅ 3단계 패턴 매칭: managers API → "${staticPath}"`);
+                } else if (url.includes('localhost:8080/api/')) {
+                    staticPath = './health.json';  // 기본 fallback
+                    console.log(`✅ 3단계 패턴 매칭: 기타 API → "${staticPath}"`);
+                }
+            }
+            
+            // 4단계: 여전히 매핑 없으면 원본 사용
+            if (!staticPath) {
+                staticPath = url;
+                console.log(`⚠️ 매핑 실패, 원본 사용: "${url}"`);
+            }
             
             console.log(`🌐 GitHub Pages 모드: ${url} → ${staticPath}`);
             
             // POST 요청은 더미 응답 반환
             if (options.method === 'POST') {
+                console.log('📤 POST 요청 감지, 더미 응답 반환');
                 return {
                     ok: true,
                     json: async () => ({
