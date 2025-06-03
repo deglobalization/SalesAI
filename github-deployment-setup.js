@@ -197,4 +197,4 @@ try {
     window.staticFetch = staticFetch;
 } catch (error) {
     console.error('🚨 전역 함수 등록 오류:', error);
-} 
+} // Force update Tue Jun  3 10:53:18 KST 2025
